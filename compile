@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# This file does not work on Window. You need:
+#  - make
+#  - cmake
+#  - bash
+#  - clang
+#
+# Only execute this file in the root folder.
+
+FOLDER=examples
+FILE=hello
+
+if [[ $# -eq 1 ]]; then
+    FILE=$1
+fi
+
+CFILE="$FOLDER/$FILE.c"
+#OFILE="$FOLDER/$FILE"
+OFILE=/dev/null
+
+# Recompile the LLVM pass C++ code
+make -C build
+
+# Compile the example `examples/hello.c' file with 
+# clang with the null pointer detection pass enabled.
+CLANG="clang -Xclang -load \
+      -Xclang build/nullderef/libNullDereferenceDetection.* \
+      -o $OFILE \
+      $CFILE"
+
+exec $CLANG

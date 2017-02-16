@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# This file does not work on windows. You need:
+#   - bash
+#   - clang
+
+# Print human-readable LLVM byte code to stdout
+clang -emit-llvm -S -o - examples/hello.c
