@@ -19,8 +19,9 @@ CFILE="$FOLDER/$FILE.c"
 #OFILE="$FOLDER/$FILE"
 OFILE=/dev/null
 
-# Recompile the LLVM pass C++ code
-make -C build
+# Recompile the LLVM pass C++ code, don't run clang if
+# compilation failed.
+make -C build || exit
 
 # Compile the example `examples/hello.c' file with 
 # clang with the null pointer detection pass enabled.

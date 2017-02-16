@@ -9,7 +9,7 @@ target_compile_features(NullDereferenceDetection PRIVATE cxx_range_for cxx_auto_
 # LLVM is (typically) built with no C++ RTTI. We need to match that;
 # otherwise, we'll get linker errors about missing RTTI data.
 set_target_properties(NullDereferenceDetection PROPERTIES
-    COMPILE_FLAGS "-fno-rtti"
+    COMPILE_FLAGS "-Wall -fno-rtti"
 )
 
 # Get proper shared-library behavior (where symbols are not necessarily
