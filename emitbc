@@ -4,7 +4,9 @@
 #   - bash
 #   - clang
 
-CLANG=clang
+if [[ "$CLANG" = "" ]]; then
+    CLANG=clang
+fi
 CLANG_OPTS=
 
 FOLDER=examples

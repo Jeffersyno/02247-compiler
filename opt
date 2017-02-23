@@ -1,6 +1,10 @@
 #!/bin/bash
 
-OPT=opt
+# use export OPT=/your/path/to/your/opt/installation/on/mac
+# before running this file to point to a different opt binary
+if [[ "$OPT" == "" ]]; then
+    OPT=opt
+fi
 
 FOLDER=examples
 FILE=hello

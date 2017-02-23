@@ -8,7 +8,9 @@
 #
 # Only execute this file in the root folder.
 
-CLANG=clang
+if [[ "$CLANG" = "" ]]; then
+    CLANG=clang
+fi
 
 FOLDER=examples
 FILE=hello
