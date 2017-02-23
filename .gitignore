@@ -3,3 +3,4 @@ build
 a.out
 *.bc
 CMakeLists.txt.user
+.vscode
