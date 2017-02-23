@@ -4,16 +4,29 @@
 #   - bash
 #   - clang
 
+CLANG=clang
+CLANG_OPTS=
+
 FOLDER=examples
 FILE=hello
+OUTPUT="-o __OUTPUT__"
+
+if [[ $# -gt 0 && "$1" = "--human" ]]; then
+    OUTPUT="-o - "
+    CLANG_OPTS="-S"
+    shift
+fi
 
 if [[ $# -eq 1 ]]; then
-    FILE=$1
+    FILE="$1"
 fi
 
 CFILE="$FOLDER/$FILE.c"
+OFILE="$FOLDER/$FILE.bc"
+OUTPUT=${OUTPUT//__OUTPUT__/$OFILE}
 
 # Print human-readable LLVM byte code to stdout
-CLANG="clang -emit-llvm -S -o - $CFILE"
+CMD="$CLANG -emit-llvm $CLANG_OPTS -c $OUTPUT $CFILE"
 
-exec $CLANG
+echo $CMD
+eval $CMD

@@ -70,6 +70,9 @@ struct NullDereferenceDetection : public FunctionPass {
 }
 
 char NullDereferenceDetection::ID = 0;
+static RegisterPass<NullDereferenceDetection> X("nullderef", "Null Dereference Check Pass",
+                             false /* Only looks at CFG */,
+                             false /* Analysis Pass */);
 
 // Automatically enable the pass.
 // http://adriansampson.net/blog/clangpass.html

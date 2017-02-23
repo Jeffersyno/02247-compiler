@@ -8,11 +8,13 @@
 #
 # Only execute this file in the root folder.
 
+CLANG=clang
+
 FOLDER=examples
 FILE=hello
 
 if [[ $# -eq 1 ]]; then
-    FILE=$1
+    FILE="$1"
 fi
 
 CFILE="$FOLDER/$FILE.c"
@@ -25,7 +27,7 @@ make -C build || exit
 
 # Compile the example `examples/hello.c' file with 
 # clang with the null pointer detection pass enabled.
-CLANG="clang -Xclang -load \
+CLANG="$CLANG -Xclang -load \
       -Xclang build/nullderef/libNullDereferenceDetection.* \
       -o $OFILE \
       $CFILE"
