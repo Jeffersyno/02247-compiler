@@ -1,8 +1,19 @@
 #!/bin/bash
 
-# This file does not work on windows. You need:
+# This file does not work on Windows. You need:
 #   - bash
 #   - clang
 
+FOLDER=examples
+FILE=hello
+
+if [[ $# -eq 1 ]]; then
+    FILE=$1
+fi
+
+CFILE="$FOLDER/$FILE.c"
+
 # Print human-readable LLVM byte code to stdout
-clang -emit-llvm -S -o - examples/hello.c
+CLANG="clang -emit-llvm -S -o - $CFILE"
+
+exec $CLANG

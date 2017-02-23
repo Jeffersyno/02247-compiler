@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This file does not work on Window. You need:
+# This file does not work on Windows. You need:
 #  - make
 #  - cmake
 #  - bash
