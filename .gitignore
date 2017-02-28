@@ -4,3 +4,4 @@ a.out
 *.bc
 CMakeLists.txt.user
 .vscode
+.idea
