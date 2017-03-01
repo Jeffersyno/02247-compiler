@@ -8,8 +8,9 @@
  */
 
 void deref1() {
-    int *ptr = NULL;
-    int wonderful_value = *ptr; // error
+    int *ptr1 = NULL;
+    int *ptr2 = ptr1;
+    int value = *ptr2; // error
 }
 
 struct Struct1 { int value; };

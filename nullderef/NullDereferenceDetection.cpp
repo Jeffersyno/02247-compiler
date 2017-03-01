@@ -7,6 +7,9 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
+#include "PointerTracker.h"
+
 using namespace llvm;
 
 /*
@@ -25,6 +28,7 @@ struct NullDereferenceDetection : public FunctionPass {
     NullDereferenceDetection() : FunctionPass(ID) {}
 
     bool runOnFunction(Function &function) override {
+        PointerTrackerVisitor tracker;
 
         // TODO implement assignment 2
 
@@ -38,33 +42,33 @@ struct NullDereferenceDetection : public FunctionPass {
             // get the reference of an instruction from an iterator (see [2])
             Instruction& inst = *iptr;
 
-            inst.dump();
+            VisitResult status = tracker.visit(inst);
 
             // dyn_cast, returns nullptr on failure, which evaluates to false (see [3])
             // works only with pointers (so we need the &)
-            if (StoreInst *storeInst = dyn_cast<StoreInst>(&inst))
-                dealWithStoreInstruction(*storeInst);
+            //if (StoreInst *storeInst = dyn_cast<StoreInst>(&inst))
+            //    dealWithStoreInstruction(*storeInst);
         }
 
         // return true if the function was modified, false otherwise [4]
         return false;
     }
 
-    void dealWithStoreInstruction(StoreInst &inst) {
-        Value *op0 = inst.getOperand(0); // value to be stored
-        Value *op1 = inst.getOperand(1); // place to store it
+    //void dealWithStoreInstruction(StoreInst &inst) {
+    //    Value *op0 = inst.getOperand(0); // value to be stored
+    //    Value *op1 = inst.getOperand(1); // place to store it
 
-        if (ConstantPointerNull *nil = dyn_cast<ConstantPointerNull>(op0)) {
-            for (User *u : op1->users()) {
-                if (LoadInst *loadInst = dyn_cast<LoadInst>(u)) {
-                    errs().changeColor(errs().RED, true);
-                    errs() << "Maybe NullPointerException\n";
-                    errs().resetColor();
-                    break;
-                }
-            }
-        }
-    }
+    //    if (ConstantPointerNull *nil = dyn_cast<ConstantPointerNull>(op0)) {
+    //        for (User *u : op1->users()) {
+    //            if (LoadInst *loadInst = dyn_cast<LoadInst>(u)) {
+    //                errs().changeColor(errs().RED, true);
+    //                errs() << "Maybe NullPointerException\n";
+    //                errs().resetColor();
+    //                break;
+    //            }
+    //        }
+    //    }
+    //}
 };
 
 }

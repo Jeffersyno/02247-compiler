@@ -1,15 +1,10 @@
 #include <stdio.h>
 
-// Forward declarations
-void simple_error_with_local_variable();
-
 struct GreatStruct {
     int value;
 };
 
 int main(int argc, char** args) {
-    float f = 0.23f;
-
     struct GreatStruct *ptr;
     ptr = NULL;
     ptr = 0;
