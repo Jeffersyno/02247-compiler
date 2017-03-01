@@ -11,7 +11,7 @@ if [[ -e settings_override ]]; then
     source settings_override
 fi
 
-if [[ $# -gt 0 ]]; then
+if [[ $# -gt 0 && $0 =~ settings$ ]]; then
     if [[ "$1" = "override" || "$1" = "overwrite" ]]; then
         if [[ -e settings_override ]]; then 
             read -p "Override existing \`settings_override' file? " -n 1 -r
