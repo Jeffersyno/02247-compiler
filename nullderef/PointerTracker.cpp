@@ -8,41 +8,30 @@
 
 using namespace llvm;
 
-std::string pointer_status_toString(PointerStatus status) {
-    switch (status) {
-    case NIL:	   return "NULL";
-    case NON_NIL:  return "NOT NULL";
-    case DONTKNOW: return "NULL or NOT NULL";
-    }
-}
+PointerStatus PointerStatus::nil(short depth) { return PointerStatus(NIL, depth); }
+PointerStatus PointerStatus::nonNil(short depth) { return PointerStatus(NON_NIL, depth); }
+PointerStatus PointerStatus::dontKnow() { return PointerStatus(DONT_KNOW, 0); }
+PointerStatus PointerStatus::incr() { return PointerStatus(this->id, this->depth+1); }
+PointerStatus PointerStatus::decr() { return PointerStatus(this->id, this->depth-1); }
+bool PointerStatus::isNullDeref() { return this->id==NIL && this->depth==0; }
+PointerStatus::PointerStatus(short id, short depth): id(id), depth(depth) {}
 
-//VisitResult PointerTrackerVisitor::visitAllocaInst(AllocaInst &I) {
-//    if (I.getAllocatedType()->isPointerTy()) {
-//        std::pair<Value*, PointerStatus> pair(&I, UNINIT);
-//        this->pointer_status_map.insert(pair);
-//    }
-//    return OK;
-//}
+VisitResult PointerTrackerVisitor::visitAllocaInst(AllocaInst &I) {
+    return OK;
+}
 
 VisitResult PointerTrackerVisitor::visitStoreInst(StoreInst &I) {
     Value *op1 = I.getOperand(0); // value to be stored
     Value *op2 = I.getOperand(1); // place to store the value
 
-    // CASE 1: constant NULL is stored
+    // CASE 1: constant NULL is stored (must be in a pointer type)
+    // We now know that op2 points to a NULL value.
     if (ConstantPointerNull *nil = dyn_cast<ConstantPointerNull>(op1)) {
-        errs() << "NULL STORED IN ";
-        op2->dump();
-        this->update(op2, NIL);
+        this->update(op2, PointerStatus::nil(1));
     }
     // CASE 2: value is loaded from some other register, and we know it!
-    else {
-        errs() << "OTHER VALUE STORED IN ";
-        op1->dump();
-        op2->dump();
-        if (this->contains(op1)) {
-            errs() << "We know about this assigned!\n";
-            this->update(op2, this->get(op1));
-        }
+    else if (this->contains(op1)) {
+        this->update(op2, this->get(op1));
     }
 
     return OK;
@@ -50,12 +39,27 @@ VisitResult PointerTrackerVisitor::visitStoreInst(StoreInst &I) {
 
 VisitResult PointerTrackerVisitor::visitLoadInst(LoadInst &I)
 {
+    Value *op = I.getOperand(0);
+
+    // If the value we're loading is in our map, then consider
+    // the same pointer status for the new value.
+    if (this->contains(op)) {
+        PointerStatus status = this->get(op).decr();
+        this->update(&I, status);
+
+        if (status.isNullDeref()) {
+            return NULL_DEREF;
+        }
+    }
+
     return OK;
 }
 
-VisitResult PointerTrackerVisitor::visitInstruction(Instruction &I)
+VisitResult PointerTrackerVisitor::visitInstruction(Instruction &I) { return OK; }
+
+void PointerTrackerVisitor::dumpMap()
 {
-    return OK;
+    errs() << "TODO pretty print of map\n";
 }
 
 bool PointerTrackerVisitor::update(Value *key, PointerStatus status)
@@ -75,3 +79,4 @@ bool PointerTrackerVisitor::contains(Value *key)
 {
     return this->pointer_status_map.count(key) != 0;
 }
+

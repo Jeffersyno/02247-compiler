@@ -33,7 +33,7 @@ struct NullDereferenceDetection : public FunctionPass {
         // TODO implement assignment 2
 
         errs().changeColor(errs().BLUE);
-        errs() << ">> Instructions of function " << function.getName() << "<<\n";
+        errs() << ">> Function " << function.getName() << " <<\n";
         errs().resetColor();
 
         // iterate over all instructions in a function (skip the basic blocks, see [1])
@@ -42,33 +42,22 @@ struct NullDereferenceDetection : public FunctionPass {
             // get the reference of an instruction from an iterator (see [2])
             Instruction& inst = *iptr;
 
-            VisitResult status = tracker.visit(inst);
+            switch (tracker.visit(inst)) {
+            case OK: break;
+            case NULL_DEREF:
+                errs().changeColor(raw_ostream::RED);
+                errs() << "Error: Null dereference!\n";
+                errs().resetColor();
+                break;
+            case MAYBE_NULL_DEREF: errs() << "Warning: Maybe null dereference.\n"; break;
+            case UNKNOWN_ERROR: errs() << "WOOPS!"; break;
+            }
 
-            // dyn_cast, returns nullptr on failure, which evaluates to false (see [3])
-            // works only with pointers (so we need the &)
-            //if (StoreInst *storeInst = dyn_cast<StoreInst>(&inst))
-            //    dealWithStoreInstruction(*storeInst);
         }
 
         // return true if the function was modified, false otherwise [4]
         return false;
     }
-
-    //void dealWithStoreInstruction(StoreInst &inst) {
-    //    Value *op0 = inst.getOperand(0); // value to be stored
-    //    Value *op1 = inst.getOperand(1); // place to store it
-
-    //    if (ConstantPointerNull *nil = dyn_cast<ConstantPointerNull>(op0)) {
-    //        for (User *u : op1->users()) {
-    //            if (LoadInst *loadInst = dyn_cast<LoadInst>(u)) {
-    //                errs().changeColor(errs().RED, true);
-    //                errs() << "Maybe NullPointerException\n";
-    //                errs().resetColor();
-    //                break;
-    //            }
-    //        }
-    //    }
-    //}
 };
 
 }

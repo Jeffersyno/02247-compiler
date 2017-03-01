@@ -31,3 +31,8 @@ void deref4() {
     int *arr_ptr = &arr[2];
     int value = *arr_ptr; // fine, 3 expected
 }
+
+void deref5() {
+    int **ptr1 = NULL;
+    int *ptr2 = *ptr1;
+}

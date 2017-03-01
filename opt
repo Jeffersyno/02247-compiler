@@ -13,16 +13,17 @@ fi
 CFILE="$FOLDER/$FILE.c"
 BCFILE="$FOLDER/$FILE.bc"
 
-echo $CFILE
-echo $BCFILE
+# Recompile the LLVM pass C++ code, don't run clang if
+# compilation failed.
+make -C build || exit
 
-# compile bitcode if it doesn't exist
+# Compile bitcode if it doesn't exist or if its old
 if [[ ! -e $BCFILE || $CFILE -nt $BCFILE ]]; then
     echo "Compiling $CFILE..."
     ./emitbc $FILE
 fi
 
 CMD="$OPT -load build/nullderef/libNullDereferenceDetection.so -nullderef < $BCFILE > /dev/null"
-echo $CMD
 
+echo $CMD
 eval $CMD
