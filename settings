@@ -11,16 +11,20 @@ if [[ -e settings_override ]]; then
     source settings_override
 fi
 
-if [[ "$1" = "override" ]]; then
-    if [[ -e settings_override ]]; then 
-        read -p "Override existing \`settings_override' file? " -n 1 -r
-        if [[ ! $REPLY =~ ^[Ty]$ ]]; then
-            echo "  Ok I won't. Bye!"
-            exit 0
+if [[ $# -gt 0 ]]; then
+    if [[ "$1" = "override" || "$1" = "overwrite" ]]; then
+        if [[ -e settings_override ]]; then 
+            read -p "Override existing \`settings_override' file? " -n 1 -r
+            if [[ ! $REPLY =~ ^[Ty]$ ]]; then
+                echo "  Ok I won't. Bye!"
+                exit 0
+            fi
+            echo 
         fi
-        echo 
+        echo "CLANG=$CLANG" > settings_override
+        echo "OPT=$OPT" >> settings_override
+        echo "You can now modify the \`settings_override' file."
+    else 
+        echo "Use \`override' to override the \`settings_override' file."
     fi
-    echo "CLANG=$CLANG" > settings_override
-    echo "OPT=$OPT" >> settings_override
-    echo "You can now modify the \`settings_override' file."
 fi
