@@ -8,9 +8,8 @@
 #
 # Only execute this file in the root folder.
 
-if [[ "$CLANG" = "" ]]; then
-    CLANG=clang
-fi
+# Load the CLANG and OPT variables
+source settings
 
 FOLDER=examples
 FILE=hello
@@ -34,4 +33,5 @@ CLANG="$CLANG -Xclang -load \
       -o $OFILE \
       $CFILE"
 
+echo $CLANG
 exec $CLANG

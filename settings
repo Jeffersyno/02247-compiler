@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# This file defined the paths to CLANG and LLVM OPT. By default, it uses the
+# binaries on the path. To use custom values, call `./settings override' and
+# modify the `./settings_override'
+
+CLANG=clang
+OPT=opt
+
+if [[ -e settings_override ]]; then
+    source settings_override
+fi
+
+if [[ "$1" = "override" ]]; then
+    if [[ -e settings_override ]]; then 
+        read -p "Override existing \`settings_override' file? " -n 1 -r
+        if [[ ! $REPLY =~ ^[Ty]$ ]]; then
+            echo "  Ok I won't. Bye!"
+            exit 0
+        fi
+        echo 
+    fi
+    echo "CLANG=$CLANG" > settings_override
+    echo "OPT=$OPT" >> settings_override
+    echo "You can now modify the \`settings_override' file."
+fi
