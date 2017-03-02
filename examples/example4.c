@@ -5,5 +5,5 @@ void example4() {
     int ***ptr3 = &ptr2;
     int ****ptr4 = &ptr3;
 
-    int value = *(*(*(*(ptr4))));
+    int value = ****ptr4;
 }

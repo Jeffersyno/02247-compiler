@@ -34,6 +34,10 @@ VisitResult PointerTrackerVisitor::visitStoreInst(StoreInst &I) {
     else if (this->contains(op1)) {
         this->update(op2, this->get(op1).incr());
     }
+    // CASE 3: we assign a non-null value
+    else {
+        this->update(op2, PointerStatus::nonNil(1));
+    }
 
     return OK;
 }
