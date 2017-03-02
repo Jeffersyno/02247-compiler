@@ -19,6 +19,7 @@ using namespace llvm;
  * [2] http://llvm.org/docs/ProgrammersManual.html#turning-an-iterator-into-a-class-pointer-and-vice-versa
  * [3] http://llvm.org/docs/ProgrammersManual.html#the-isa-cast-and-dyn-cast-templates
  * [4] http://llvm.org/docs/WritingAnLLVMPass.html#the-doinitialization-module-method
+ * [5] http://llvm.org/docs/WritingAnLLVMPass.html#basic-code-required
  */
 
 namespace {
@@ -47,6 +48,7 @@ struct NullDereferenceDetection : public FunctionPass {
             case NULL_DEREF:
                 errs().changeColor(raw_ostream::RED);
                 errs() << "Error: Null dereference!\n";
+                inst.dump();
                 errs().resetColor();
                 break;
             case MAYBE_NULL_DEREF: errs() << "Warning: Maybe null dereference.\n"; break;
@@ -62,6 +64,7 @@ struct NullDereferenceDetection : public FunctionPass {
 
 }
 
+// Enable the pass for opt [5]
 char NullDereferenceDetection::ID = 0;
 static RegisterPass<NullDereferenceDetection> X("nullderef", "Null Dereference Check Pass",
                              false /* Only looks at CFG */,
