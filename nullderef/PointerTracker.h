@@ -64,6 +64,7 @@ public:
     VisitResult visitAllocaInst(llvm::AllocaInst &I);
     VisitResult visitStoreInst(llvm::StoreInst &I);
     VisitResult visitLoadInst(llvm::LoadInst &I);
+    VisitResult visitGetElementPtrInst(llvm::GetElementPtrInst &I);
 
     VisitResult visitInstruction(llvm::Instruction &I);
 

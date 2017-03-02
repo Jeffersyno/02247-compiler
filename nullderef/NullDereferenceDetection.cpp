@@ -70,7 +70,7 @@ static RegisterPass<NullDereferenceDetection> X("nullderef", "Null Dereference C
                              false /* Only looks at CFG */,
                              false /* Analysis Pass */);
 
-// Automatically enable the pass.
+// Automatically enable the pass for clang.
 // http://adriansampson.net/blog/clangpass.html
 static void registerSkeletonPass(const PassManagerBuilder &,
                                  legacy::PassManagerBase &PM) {

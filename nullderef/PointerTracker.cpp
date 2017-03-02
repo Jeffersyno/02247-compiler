@@ -56,6 +56,19 @@ VisitResult PointerTrackerVisitor::visitLoadInst(LoadInst &I) {
     return OK;
 }
 
+VisitResult PointerTrackerVisitor::visitGetElementPtrInst(GetElementPtrInst &I)
+{
+    Value *op = I.getOperand(0);
+
+    if (this->contains(op)) {
+        // TODO track information about fetched struct field
+        if (this->get(op).decr().isNullDeref()) {
+            return NULL_DEREF;
+        }
+    }
+    return OK;
+}
+
 VisitResult PointerTrackerVisitor::visitInstruction(Instruction &I) {
     return OK;
 }
