@@ -8,7 +8,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-#include "PointerTracker.h"
+#include "PointerTrackerVisitor.h"
 
 using namespace llvm;
 

@@ -4,7 +4,7 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "PointerTracker.h"
+#include "PointerTrackerVisitor.h"
 
 using namespace llvm;
 

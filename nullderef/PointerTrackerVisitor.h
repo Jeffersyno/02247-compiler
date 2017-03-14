@@ -1,3 +1,6 @@
+#ifndef POINTER_TRACKER_VISITOR_H
+#define POINTER_TRACKER_VISITOR_H
+
 #include <functional>
 
 #include <llvm/IR/Value.h>
@@ -77,3 +80,5 @@ private:
     PointerStatus get(llvm::Value *key);
     bool contains(llvm::Value *key);
 };
+
+#endif // POINTER_TRACKER_VISITOR_H
