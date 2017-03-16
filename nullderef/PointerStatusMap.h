@@ -8,8 +8,8 @@
 
 class PointerKey {
 public:
-    bool operator ==(PointerKey& other) const;
-    virtual std::size_t hash() const noexcept = 0;
+    bool operator ==(const PointerKey other) const;
+    virtual std::size_t hash() const noexcept;
 };
 
 class LLVMValueKey : public PointerKey {
@@ -40,8 +40,8 @@ public:
     static const short NON_NIL = 2;
     static const short DONT_KNOW = 1 | 2;
 
-    virtual short status() const = 0;
-    virtual int depth() const = 0;
+    virtual short status() const;
+    virtual int depth() const;
     virtual bool isNullDeref() const;
 };
 
@@ -77,11 +77,12 @@ public:
 };
 
 class TrackerMap {
-    std::unordered_map<std::unique_ptr<PointerKey>, std::unique_ptr<PointerStatus>> map;
+    std::unordered_map<PointerKey, PointerStatus> map;
 public:
-    PointerStatus& get(const PointerKey& key) const;
-    bool contains(const PointerKey& key) const;
-    bool put(std::unique_ptr<PointerKey> key, std::unique_ptr<PointerStatus> value);
+    /* We pass keys and statusses as value, make sure our types don't grown too large */
+    PointerStatus get(PointerKey key);
+    bool contains(PointerKey key);
+    void put(PointerKey key, PointerStatus value);
 };
 
 

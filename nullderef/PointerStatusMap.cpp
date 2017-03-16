@@ -4,9 +4,8 @@
 #include "PointerStatusMap.h"
 
 
-bool PointerKey::operator ==(PointerKey &other) const
+bool PointerKey::operator ==(const PointerKey other) const
 {
-    // TODO fix
     return this->hash() == other.hash();
 }
 
@@ -50,7 +49,17 @@ int ReferenceValue::depth() const
     return 1 + this->ref.depth();
 }
 
-PointerStatus &TrackerMap::get(const PointerKey &key) const
+PointerStatus TrackerMap::get(PointerKey key)
 {
-    // TODO implement
+    return this->map[key];
+}
+
+bool TrackerMap::contains(PointerKey key)
+{
+    return this->map.count(key);
+}
+
+void TrackerMap::put(PointerKey key, PointerStatus value)
+{
+    this->map[key] = value;
 }
