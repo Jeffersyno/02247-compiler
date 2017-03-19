@@ -8,7 +8,6 @@
 # RUN
 # From the command line: $bats tests.bats
 
-TEST_BREW_PREFIX="$(brew --prefix)"
 load 'test/bats-support/load'
 load 'test/bats-assert/load'
 
