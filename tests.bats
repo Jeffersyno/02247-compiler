@@ -18,11 +18,7 @@ NULL_DEREF="NULL_DEREF"
 MAYBE_NULL_DEREF="MAYBE_NULL_DEREF"
 UNKNOWN_ERROR="UNKNOWN_ERROR"
 
-function createResult() {
-	echo $RESULT_OUTPUT $1 "at  " $2
-}
-
-function createDerefResult() {
+function buildDereferenceRegexForInstruction() {
 	echo $RESULT_OUTPUT $NULL_DEREF "at  " $1
 }
 
@@ -31,7 +27,7 @@ function assert_events_count() {
 }
 
 function assert_dereference_at_instruction() {
-  	assert_line $(createDerefResult $1)
+  	assert_line $(buildDereferenceRegexForInstruction $1)
 }
 
 @test "Example 1" {
