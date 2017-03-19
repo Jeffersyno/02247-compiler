@@ -2,7 +2,6 @@ add_library(NullDereferenceDetection MODULE
     # List your source files here.
     NullDereferenceDetection.cpp
     PointerTrackerVisitor.cpp
-    PointerStatusMap.cpp
 )
 
 # Use C++11 to compile our pass (i.e., supply -std=c++11).
