@@ -1,11 +1,12 @@
 #!/bin/bash
 # Test file for using with bats: https://github.com/sstephenson/bats
-# Install bats in macOS doing: 
-#	$brew install bats
-# Install needed addons (bats-assert: https://github.com/ztombol/bats-assert):
-#	$brew tap kaos/shell
-#	$brew install bats-assert
-# run with: $bats tests.bats
+
+# INSTALLATION
+# Install bats in macOS by doing: $brew install bats
+# for installation for other platforms check: https://github.com/sstephenson/bats/wiki/Install-Bats-Using-a-Package
+
+# RUN
+# From the command line: $bats tests.bats
 
 TEST_BREW_PREFIX="$(brew --prefix)"
 load 'test/bats-support/load'
