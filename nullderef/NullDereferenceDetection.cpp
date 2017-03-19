@@ -9,6 +9,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 #include "PointerTrackerVisitor.h"
+#include "TestSuite.h"
 
 using namespace llvm;
 
@@ -33,9 +34,7 @@ struct NullDereferenceDetection : public FunctionPass {
 
         // TODO implement assignment 2
 
-        errs().changeColor(errs().BLUE);
         errs() << ">> Function " << function.getName() << " <<\n";
-        errs().resetColor();
 
         // iterate over all instructions in a function (skip the basic blocks, see [1])
         for (inst_iterator iptr = inst_begin(function), i_end = inst_end(function); iptr != i_end; ++iptr) {
@@ -45,14 +44,9 @@ struct NullDereferenceDetection : public FunctionPass {
 
             switch (tracker.visit(inst)) {
             case OK: break;
-            case NULL_DEREF:
-                errs().changeColor(raw_ostream::RED);
-                errs() << "Error: Null dereference!\n";
-                inst.dump();
-                errs().resetColor();
-                break;
-            case MAYBE_NULL_DEREF: errs() << "Warning: Maybe null dereference.\n"; break;
-            case UNKNOWN_ERROR: errs() << "WOOPS!"; break;
+            case NULL_DEREF: TestSuite::printResult(NULL_DEREF, inst); break;
+            case MAYBE_NULL_DEREF: TestSuite::printResult(MAYBE_NULL_DEREF); break;
+            case UNKNOWN_ERROR: TestSuite::printResult(UNKNOWN_ERROR); break;
             }
 
         }

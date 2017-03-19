@@ -1,5 +1,3 @@
-#include <string>
-
 #include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/Support/raw_ostream.h>
