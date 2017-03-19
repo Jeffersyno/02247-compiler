@@ -7,6 +7,8 @@
 #include <llvm/IR/Value.h>
 #include <llvm/ADT/Hashing.h>
 
+using namespace llvm;
+
 // TODO: unused class, remove? This is maybe some trush form initial development?
 namespace std {
     template<> struct hash<PointerKey> {
@@ -17,21 +19,21 @@ namespace std {
 class PointerKey {
 public:
     bool operator ==(const PointerKey other) const { return this->hash() == other.hash(); }
-    virtual std::size_t hash() const noexcept { return llvm::hash_value(0); }
+    virtual size_t hash() const noexcept { return hash_value(0); }
 };
 
 class LLVMValueKey: public PointerKey {
-    const llvm::Value* value;
+    const Value* value;
 
 public:
-    std::size_t hash() const noexcept override { return llvm::hash_value(this->value); }
+    size_t hash() const noexcept override { return hash_value(this->value); }
 };
 
 class StructFieldKey : public PointerKey {
-    llvm::Value* strct;
+    Value* strct;
     int field_no;
 public:
-    std::size_t hash() const noexcept override { return (31 + llvm::hash_value(this->strct)) * 23 + (this->field_no << 2); }
+    size_t hash() const noexcept override { return (31 + hash_value(this->strct)) * 23 + (this->field_no << 2); }
 };
 
 class PointerStatus {
@@ -77,7 +79,7 @@ public:
 };
 
 class TrackerMap {
-    std::unordered_map<PointerKey, PointerStatus> map;
+    unordered_map<PointerKey, PointerStatus> map;
 public:
     /* We pass keys and statuses as value, make sure our types don't grown too large */
     PointerStatus get(PointerKey key) { return this->map[key]; }
