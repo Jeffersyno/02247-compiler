@@ -26,17 +26,39 @@ function createDerefResult() {
 	echo $RESULT_OUTPUT $NULL_DEREF "at  " $1
 }
 
+function assert_events_count() {
+	assert_equal $(echo $output | grep -o $RESULT_OUTPUT | wc -l | tr -d " ") $1
+}
+
+function assert_dereference_at_instruction() {
+  	assert_line $(createDerefResult $1)
+}
+
 @test "Example 1" {
   run ./opt example1
-  instruction="%7 = load i32, i32* %6, align 4"
-  assert_line $(createDerefResult $instruction)
 
-  instruction="%9 = load i32, i32* %8, align 4"
-  assert_line $(createDerefResult $instruction)
+  assert_events_count 2
+  assert_dereference_at_instruction "%7 = load i32, i32* %6, align 4"
+  assert_dereference_at_instruction "%9 = load i32, i32* %8, align 4"
 }
 
 @test "Example 2" {
   run ./opt example2
-  instruction="%3 = load i32, i32* %2, align 4"
-  assert_line $(createDerefResult $instruction)
+
+  assert_events_count 1
+  assert_dereference_at_instruction "%3 = load i32, i32* %2, align 4"
+}
+
+@test "Example 3" {
+  run ./opt example3
+
+  assert_events_count 1
+  assert_dereference_at_instruction "%4 = load i32*, i32** %3, align 8"
+}
+
+@test "Example 4" {
+  run ./opt example4
+
+  assert_events_count 1
+  assert_dereference_at_instruction "%10 = load i32, i32* %9, align 4"
 }
