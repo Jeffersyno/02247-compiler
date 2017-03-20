@@ -1,5 +1,5 @@
 
-void example8() {
+int main() {
     int value = 5;
     int *ptr1 = 0;
     int **ptr2 = &ptr1;

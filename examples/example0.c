@@ -1,6 +1,6 @@
 struct A { int value; };
 
-void example0() {
+int main() {
     struct A *x = 0;
     x->value;
 }

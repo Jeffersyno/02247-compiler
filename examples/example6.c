@@ -1,5 +1,5 @@
 
-void example6() {
+int main() {
     int* ptr = 0;
     if (ptr != 0) {
         *ptr;
