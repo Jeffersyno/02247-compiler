@@ -67,3 +67,28 @@ function assert_dereference_at_instruction() {
   assert_events_count 1
   assert_dereference_at_instruction "%10 = load i32, i32* %9, align 4"
 }
+
+@test "Example 5" {
+  run ./run example5
+  assert_failure
+
+  run ./opt example5
+  assert_events_count 1
+  assert_dereference_at_instruction "%6 = load i32, i32* %5, align 4"
+}
+
+@test "Example 7" {
+  run ./run example7
+  assert_success
+
+  run ./opt example7
+  assert_events_count 0
+}
+
+@test "Example 8" {
+  run ./run example8
+  assert_success
+
+  run ./opt example8
+  assert_events_count 0
+}
