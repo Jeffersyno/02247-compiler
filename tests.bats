@@ -31,30 +31,39 @@ function assert_dereference_at_instruction() {
 }
 
 @test "Example 1" {
-  run ./opt example1
+  run ./run example1
+  assert_failure
 
+  run ./opt example1
   assert_events_count 2
   assert_dereference_at_instruction "%7 = load i32, i32* %6, align 4"
   assert_dereference_at_instruction "%9 = load i32, i32* %8, align 4"
 }
 
 @test "Example 2" {
-  run ./opt example2
+  # WHY IS THIS RUNNING WITHOUT RUNTIME ERROR?!?!?!?
+  run ./run example2
+  assert_failure
 
+  run ./opt example2
   assert_events_count 1
   assert_dereference_at_instruction "%3 = load i32, i32* %2, align 4"
 }
 
 @test "Example 3" {
-  run ./opt example3
+  run ./run example3
+  assert_failure
 
+  run ./opt example3
   assert_events_count 1
   assert_dereference_at_instruction "%4 = load i32*, i32** %3, align 8"
 }
 
 @test "Example 4" {
-  run ./opt example4
+  run ./run example4
+  assert_failure
 
+  run ./opt example4
   assert_events_count 1
   assert_dereference_at_instruction "%10 = load i32, i32* %9, align 4"
 }

@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# This file does not work on Windows. You need:
+#  - make
+#  - cmake
+#  - bash
+#  - clang
+#
+# Only execute this file in the root folder.
+
+# Load the CLANG variable
+source settings
+
+FOLDER=examples
+FILE=hello
+
+if [[ $# -eq 1 ]]; then
+    FILE="$1"
+fi
+
+CFILE="$FOLDER/$FILE.c"
+OFILE="build/$FOLDER/$FILE"
+
+# Build the example with clang
+CLANG="$CLANG -O0 -o $OFILE $CFILE"
+echo --Building:
+echo $CLANG
+$($CLANG)
+
+RUN="./$OFILE"
+echo --Running:
+echo $RUN
+echo --Result:
+exec $RUN
