@@ -1,36 +1,51 @@
 #ifndef POINTER_STATUS_MAP_H
 #define POINTER_STATUS_MAP_H
 
-#include <memory>
-#include <functional>
+//#include <memory>
 #include <unordered_map>
 #include <llvm/IR/Value.h>
 #include <llvm/ADT/Hashing.h>
 
 using namespace llvm;
 
+enum PointerKeyType {
+    LLVM_VALUE,
+    STRUCT_FIELD
+};
+
 class PointerKey {
-public:
-    bool operator ==(const PointerKey other) const { return this->hash() == other.hash(); }
-    virtual size_t hash() const noexcept { return hash_value(0); }
-    virtual const Value *llvmValue() const;
-};
+    PointerKeyType type;
+    Value *value;
+    int fieldno;
 
-class LLVMValueKey: public PointerKey {
-    const Value *value;
+    //PointerKey() : PointerKey(PointerKeyType::NONSENSE, NULL, 0) {}
+    PointerKey(PointerKeyType type, Value *value, int fieldno)
+        : type(type), value(value), fieldno(fieldno) {}
 
 public:
-    LLVMValueKey(Value *value) : value(value) {}
-    size_t hash() const noexcept override { return hash_value(this->value); }
-    const Value *llvmValue() const { return value; }
-};
+    static PointerKey createLlvmKey(Value *value) {
+        return PointerKey(LLVM_VALUE, value, 0);
+    }
 
-class StructFieldKey : public PointerKey {
-    const Value* strct;
-    const int field_no;
-public:
-    size_t hash() const noexcept override { return (31 + hash_value(this->strct)) * 23 + (this->field_no << 2); }
-    const Value *llvmValue() const { return strct; }
+    static PointerKey createStructFieldKey(Value *value, int fieldno) {
+        return PointerKey(STRUCT_FIELD, value, fieldno);
+    }
+
+    bool operator ==(const PointerKey other) const {
+        return this->type == other.type
+                && this->value == other.value
+                && this->fieldno == other.fieldno;
+    }
+
+    size_t hash() const noexcept {
+        size_t h = 13;
+        h = 23*h + this->type;
+        h = 23*h + this->fieldno;
+        h = 23*h + hash_value(this->value);
+        return h;
+    }
+
+    Value *getLlvmValue() const { return this->value; }
 };
 
 // TODO: unused class, remove? This is maybe some trush form initial development?
@@ -48,47 +63,83 @@ namespace std {
  *           //     \\
  *       {NIL}     {NON_NIL}
  *           \\     //
- *              {}
+ *              {} --> don't care about this
  */
+enum PointerStatusValue {
+    NIL = 1,
+    NON_NIL = 2,
+    DONT_KNOW = NIL | NON_NIL
+};
+
+enum PointerStatusType {
+    NONSENSE,
+    PURE,
+    IMMITATION,
+    REFERENCE
+};
+
 class PointerStatus {
-public:
-    static const short NIL = 1;
-    static const short NON_NIL = 2;
-    static const short DONT_KNOW = 3;
+    PointerStatusType type;
+    PointerStatusValue statusValue;
+    PointerStatus *reference;
 
-    virtual short status() const { return 0; }
-    virtual int depth() const { return 0; }
-    virtual bool isNullDeref() const { return true; }
-};
-
-class PureStatus : public PointerStatus {
-    const short status_value;
+    PointerStatus(PointerStatusType type, PointerStatusValue status, PointerStatus *reference)
+        : type(type), statusValue(status), reference(reference) {}
 
 public:
-    PureStatus(short status) : status_value(status) {}
+    // nonsense constructor to be able to store values in map
+    PointerStatus() : PointerStatus(NONSENSE, DONT_KNOW, NULL) {}
 
-    short status() const override { return this->status_value; }
-    int depth() const override { return 0; }
-};
+    static PointerStatus nil() { return PointerStatus(PURE, NIL, NULL); }
+    static PointerStatus nonNil() { return PointerStatus(PURE, NON_NIL, NULL); }
+    static PointerStatus dontKnow() { return PointerStatus(PURE, DONT_KNOW, NULL); }
 
-class ImitationStatus : public PointerStatus {
-    const PointerStatus& imitated;
+    static PointerStatus createImmitation(PointerStatus *ps) {
+        return PointerStatus(IMMITATION, ps->statusValue, ps);
+    }
 
-public:
-    ImitationStatus(const PointerStatus& imitated);
+    static PointerStatus createReference(PointerStatus *ps) {
+        return PointerStatus(REFERENCE, ps->statusValue, ps);
+    }
 
-    short status() const override { return this->imitated.status(); }
-    int depth() const override { return this->imitated.depth(); }
-};
+    PointerStatusValue getStatus() const {
+        switch (type) {
+        case IMMITATION: // fall through
+        case REFERENCE: return reference->getStatus();
+        case PURE: // fall through
+        default: return statusValue;
+        }
+    }
 
-class ReferenceStatus : public PointerStatus {
-    const PointerStatus& ref;
+    int depth() const {
+        switch (type) {
+        case IMMITATION: return reference->depth();
+        case REFERENCE: return 1 + reference->depth();
+        case PURE: // fall through
+        default: return 0;
+        }
+    }
 
-public:
-    ReferenceStatus(const PointerStatus& ref);
+    /// If we dereference this, do we get a null dereference?
+    bool isNullDeref() const {
+        switch (type) {
+        case PURE: return this->statusValue == NIL;
+        case IMMITATION:  return reference->isNullDeref();
+        case REFERENCE: // fall through
+        default: return false;
+        }
+    }
 
-    short status() const override { return this->ref.status(); }
-    int depth() const override { return 1 + this->ref.depth(); }
+    /// Get the status this status refers to, or NULL in the case of a pure value.
+    PointerStatus *dereference() {
+        switch (type) {
+        case IMMITATION: return reference->dereference();
+        case REFERENCE: return reference;
+        case PURE: // fall through
+        default: return NULL;
+        }
+    }
+
 };
 
 class PointerStatusMap {
@@ -100,7 +151,9 @@ public:
     void put(PointerKey key, PointerStatus value) { this->map[key] = value; }
     void dump() {
         for (std::pair<PointerKey, PointerStatus> p : this->map) {
-            errs() <<  "hello from " << p.first.llvmValue() << " with status " << p.second.status() << "\n";
+            errs() << "key:   ";
+            p.first.getLlvmValue()->dump();
+            errs() << "value: " << p.second.getStatus() << "\n";
         }
     }
 };

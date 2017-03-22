@@ -29,7 +29,7 @@ public:
 
     VisitResult visitAllocaInst(llvm::AllocaInst &I) {
         if (I.getType()->isPointerTy()) {
-            this->map.put(LLVMValueKey(&I), PureStatus(PointerStatus::DONT_KNOW));
+            this->map.put(PointerKey::createLlvmKey(&I), PointerStatus::dontKnow());
         }
 
         return OK;
@@ -43,7 +43,7 @@ public:
         //// CASE 1: constant NULL is stored (must be in a pointer type)
         //// We now know that op2 points to a NULL value.
         //if (dyn_cast<ConstantPointerNull>(op1)) {
-        //    this->update(op2, PointerStatus::nil(2));
+        //    this->map.put(op2, PointerStatus::nil(2));
         //}
         //// CASE 2: value is loaded from some other register, and we know it!
         //else if (this->contains(op1)) {
