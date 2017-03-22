@@ -25,7 +25,7 @@ OFILE="build/$FOLDER/$FILE"
 CLANG="$CLANG -O0 -o $OFILE $CFILE"
 echo --Building:
 echo $CLANG
-$($CLANG)
+$($CLANG) || exit
 
 RUN="./$OFILE"
 echo --Running:

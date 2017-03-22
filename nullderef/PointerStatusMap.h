@@ -10,6 +10,7 @@
 using namespace llvm;
 
 // TODO: unused class, remove? This is maybe some trush form initial development?
+// It's the hash function used by the map, don't remove.
 namespace std {
     template<> struct hash<PointerKey> {
         size_t operator()(PointerKey const& key) const noexcept { return key.hash(); }
@@ -36,6 +37,15 @@ public:
     size_t hash() const noexcept override { return (31 + hash_value(this->strct)) * 23 + (this->field_no << 2); }
 };
 
+/**
+ * The PointerStatus type stores information about a pointer type.
+ *
+ *         {NIL, NON_NIL}
+ *           //     \\
+ *       {NIL}     {NON_NIL}
+ *           \\     //
+ *              {}
+ */
 class PointerStatus {
 public:
     static const short NIL = 1;
@@ -78,8 +88,8 @@ public:
     int depth() const override { return 1 + this->ref.depth(); }
 };
 
-class TrackerMap {
-    unordered_map<PointerKey, PointerStatus> map;
+class PointerStatusMap {
+    std::unordered_map<PointerKey, PointerStatus> map;
 public:
     /* We pass keys and statuses as value, make sure our types don't grown too large */
     PointerStatus get(PointerKey key) { return this->map[key]; }
