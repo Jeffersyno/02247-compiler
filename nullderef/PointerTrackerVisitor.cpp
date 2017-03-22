@@ -62,6 +62,7 @@ VisitResult PointerTrackerVisitor::visitLoadInst(LoadInst &I) {
 
 VisitResult PointerTrackerVisitor::visitGetElementPtrInst(GetElementPtrInst &I)
 {
+    // http://llvm.org/docs/LangRef.html#getelementptr-instruction
     Value *op = I.getOperand(0);
 
     if (this->contains(op)) {
