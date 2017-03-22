@@ -9,14 +9,6 @@
 
 using namespace llvm;
 
-// TODO: unused class, remove? This is maybe some trush form initial development?
-// It's the hash function used by the map, don't remove.
-namespace std {
-    template<> struct hash<PointerKey> {
-        size_t operator()(PointerKey const& key) const noexcept { return key.hash(); }
-    };
-}
-
 class PointerKey {
 public:
     bool operator ==(const PointerKey other) const { return this->hash() == other.hash(); }
@@ -36,6 +28,14 @@ class StructFieldKey : public PointerKey {
 public:
     size_t hash() const noexcept override { return (31 + hash_value(this->strct)) * 23 + (this->field_no << 2); }
 };
+
+// TODO: unused class, remove? This is maybe some trush form initial development?
+// It's the hash function used by the map, don't remove.
+namespace std {
+    template<> struct hash<PointerKey> {
+        size_t operator()(PointerKey const& key) const noexcept { return key.hash(); }
+    };
+}
 
 /**
  * The PointerStatus type stores information about a pointer type.
