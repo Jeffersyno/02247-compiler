@@ -44,11 +44,18 @@ public:
         //// CASE 1: constant NULL is stored (must be in a pointer type)
         //// We now know that op2 points to a NULL value.
         if (dyn_cast<ConstantPointerNull>(op1)) {
-            errs() << "hello from here\n";
+            //errs() << "hello from here\n";
             if (!this->map.contains(op2))
                 return MISSED_DEFINITION;
-            errs() << "hello from there\n";
-            this->map.get(op2).setStatus(NIL);
+            //errs() << "hello from there\n";
+
+            //----------------
+            PointerStatus k = this->map.get(op2);
+            k.setStatus(NIL);
+            this->map.put(op2,k);
+            //----------------
+
+            //this->map.get(op2).setStatus(NIL);
         }
         //// CASE 2: value is loaded from some other register, and we know it!
         //else if (this->contains(op1)) {
