@@ -111,6 +111,25 @@ public:
         }
     }
 
+    void setStatus(PointerStatusValue status) {
+        // if this is a pure status, then update the statusValue
+        // if this is an immutated, then update the original
+        // if this is a reference status, then change this reference's type to PURE and set the value
+        switch (type) {
+        case IMMITATION:
+            reference->setStatus(status); break;
+        case REFERENCE:
+            this->type = PURE;
+            this->statusValue = status;
+            this->reference = NULL;
+            break;
+        case PURE: // fall through
+        default:
+            this->statusValue = status;
+            break;
+        }
+    }
+
     int depth() const {
         switch (type) {
         case IMMITATION: return reference->depth();
@@ -126,6 +145,15 @@ public:
         case PURE: return this->statusValue == NIL;
         case IMMITATION:  return reference->isNullDeref();
         case REFERENCE: // fall through
+        default: return false;
+        }
+    }
+
+    bool canDereference() {
+        switch (type) {
+        case REFERENCE: return true;
+        case IMMITATION: return this->reference->canDereference();
+        case PURE: // fall through
         default: return false;
         }
     }
@@ -147,13 +175,27 @@ class PointerStatusMap {
 public:
     /* We pass keys and statuses as value, make sure our types don't grown too large */
     PointerStatus get(PointerKey key) { return this->map[key]; }
+    PointerStatus get(Value *value) { return this->map[PointerKey::createLlvmKey(value)]; }
+
     bool contains(PointerKey key) { return this->map.count(key); }
-    void put(PointerKey key, PointerStatus value) { this->map[key] = value; }
+    bool contains(Value *value) { return this->map.count(PointerKey::createLlvmKey(value)); }
+
+    void put(PointerKey key, PointerStatus status) { this->map[key] = status; }
+    void put(Value *value, PointerStatus status) { this->map[PointerKey::createLlvmKey(value)] = status; }
+
     void dump() {
         for (std::pair<PointerKey, PointerStatus> p : this->map) {
             errs() << "key:   ";
             p.first.getLlvmValue()->dump();
-            errs() << "value: " << p.second.getStatus() << "\n";
+            errs() << "value: ";
+            switch (p.second.getStatus()) {
+            case NIL: errs() << "NIL"; break;
+            case NON_NIL: errs() << "NON NIL"; break;
+            case DONT_KNOW: errs() << "DONT KNOW"; break;
+            default: errs() << "NONSENSE"; break;
+            }
+
+            errs()  << "\n";
         }
     }
 };

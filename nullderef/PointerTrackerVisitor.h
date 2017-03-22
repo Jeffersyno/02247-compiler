@@ -17,6 +17,7 @@ enum VisitResult {
     OK,
     NULL_DEREF,
     MAYBE_NULL_DEREF,
+    MISSED_DEFINITION,
     UNKNOWN_ERROR
 };
 
@@ -42,9 +43,13 @@ public:
 
         //// CASE 1: constant NULL is stored (must be in a pointer type)
         //// We now know that op2 points to a NULL value.
-        //if (dyn_cast<ConstantPointerNull>(op1)) {
-        //    this->map.put(op2, PointerStatus::nil(2));
-        //}
+        if (dyn_cast<ConstantPointerNull>(op1)) {
+            errs() << "hello from here\n";
+            if (!this->map.contains(op2))
+                return MISSED_DEFINITION;
+            errs() << "hello from there\n";
+            this->map.get(op2).setStatus(NIL);
+        }
         //// CASE 2: value is loaded from some other register, and we know it!
         //else if (this->contains(op1)) {
         //    this->update(op2, this->get(op1).incr());
@@ -63,16 +68,18 @@ public:
 
         // If the value we're loading is in our map, then consider
         // the same pointer status for the new value.
-        // if (this->contains(op)) {
-        //    PointerStatus status = this->get(op).decr();
-        //    this->update(&I, status);
-
-        //    if (status.isNullDeref()) {
-        //        return NULL_DEREF;
-        //    }
-        //}
-
-        return OK;
+        if (this->map.contains(op)) {
+            PointerStatus status = this->map.get(op);
+            if (status.isNullDeref()) {
+                return NULL_DEREF;
+            } else if (status.canDereference()) {
+                errs() << status.dereference() << "\n";
+                this->map.put(&I, *status.dereference());
+            }
+        } else {
+            return MISSED_DEFINITION;
+        }
+    return OK;
     }
 
     VisitResult visitGetElementPtrInst(llvm::GetElementPtrInst &I) {
