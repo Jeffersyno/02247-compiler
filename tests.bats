@@ -4,9 +4,12 @@
 # INSTALLATION
 # Install bats in macOS by doing: $brew install bats
 # for installation for other platforms check: https://github.com/sstephenson/bats/wiki/Install-Bats-Using-a-Package
+#
+# Pull git submodules with (use --init if you do it the first time):
+#   `git submodule update [--init] --recursive`
 
 # RUN
-# From the command line: $bats tests.bats
+# From the command line: `bats tests.bats`
 
 load 'test/bats-support/load'
 load 'test/bats-assert/load'
@@ -42,6 +45,7 @@ function assert_dereference_at_instruction() {
 
 @test "Example 2" {
   # WHY IS THIS RUNNING WITHOUT RUNTIME ERROR?!?!?!?
+  # it's probably optimized away
   run ./run example2
   assert_failure
 

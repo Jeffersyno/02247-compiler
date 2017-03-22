@@ -27,9 +27,6 @@ public:
     VisitResult visitGetElementPtrInst(llvm::GetElementPtrInst &I);
 
     VisitResult visitInstruction(llvm::Instruction &I);
-
-    void dumpMap();
-
 private:
     PointerStatusMap map;
 };

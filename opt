@@ -4,6 +4,7 @@
 source settings
 
 FOLDER=examples
+BCFOLDER=build/examples
 FILE=hello
 
 if [[ $# -gt 0 ]]; then
@@ -11,7 +12,7 @@ if [[ $# -gt 0 ]]; then
 fi
 
 CFILE="$FOLDER/$FILE.c"
-BCFILE="$FOLDER/$FILE.bc"
+BCFILE="$BCFOLDER/$FILE.bc"
 
 # Recompile the LLVM pass C++ code, don't run clang if
 # compilation failed.

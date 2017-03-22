@@ -17,7 +17,8 @@ class TestSuite {
             case OK: return "Ok";
             case NULL_DEREF: return "Null dereference";
             case MAYBE_NULL_DEREF: return "Possible null dereference";
-            case UNKNOWN_ERROR: return "Unknown error";
+            case UNKNOWN_ERROR:
+            default: return "Unknown error";
         };
     }
 
@@ -26,7 +27,8 @@ class TestSuite {
             case OK: return "OK";
             case NULL_DEREF: return "NULL_DEREF";
             case MAYBE_NULL_DEREF: return "MAYBE_NULL_DEREF";
-            case UNKNOWN_ERROR: return "UNKNOWN_ERROR";
+            case UNKNOWN_ERROR:
+            default: return "UNKNOWN_ERROR";
         };
     }
 
