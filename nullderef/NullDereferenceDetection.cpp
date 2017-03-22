@@ -51,6 +51,9 @@ struct NullDereferenceDetection : public FunctionPass {
 
         }
 
+        errs() << "This is the dump of the tracker.\n";
+        tracker.dump();
+
         // return true if the function was modified, false otherwise [4]
         return false;
     }
