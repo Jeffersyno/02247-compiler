@@ -45,7 +45,8 @@ struct NullDereferenceDetection : public FunctionPass {
             switch (tracker.visit(inst)) {
             case OK: break;
             case NULL_DEREF: TestSuite::printResult(NULL_DEREF, inst); break;
-            case MAYBE_NULL_DEREF: TestSuite::printResult(MAYBE_NULL_DEREF); break;
+            case MAYBE_NULL_DEREF: TestSuite::printResult(MAYBE_NULL_DEREF, inst); break;
+            case MISSED_DEFINITION: TestSuite::printResult(MISSED_DEFINITION, inst); break;
             case UNKNOWN_ERROR: TestSuite::printResult(UNKNOWN_ERROR); break;
             }
 
