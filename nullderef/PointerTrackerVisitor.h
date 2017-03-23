@@ -77,6 +77,7 @@ public:
         if (this->map.contains(op)) {
             errs() << "FOUND THE OP :-)\n";
             PointerStatus status = this->map.get(op);
+
             if (status.isNullDeref()) {
                 return NULL_DEREF;
             } else if (status.hasParent()) {

@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <llvm/IR/Value.h>
 #include <llvm/ADT/Hashing.h>
+#include <sstream>
 
 using namespace llvm;
 
@@ -45,6 +46,17 @@ public:
     }
 
     Value *getLlvmValue() const { return this->value; }
+
+    std::string prettyPrint() {
+        std::string s = "TYPE= ";
+        if(type == PointerKeyType::LLVM_VALUE) { s.append("LLVM_VALUE; "); } else {
+            s.append("STRUCT_FIELD; ");
+        }
+        s.append("VALUE=");
+        value->dump();
+        s.append("FIELDNO=");
+        return s;
+    }
 };
 
 // TODO: unused class, remove? This is maybe some trush form initial development?
@@ -73,14 +85,14 @@ enum PointerStatusValue {
 enum PointerStatusType {
     NONSENSE,
     PURE,
-    IMMITATION,
+    IMITATION,
     REFERENCE
 };
 
 class PointerStatus {
     PointerStatusType type;
     PointerStatusValue statusValue; // only for PURE
-    PointerStatus *reference; // only for REFERENCE and IMMITATION
+    PointerStatus *reference; // only for REFERENCE and IMITATION
 
     PointerStatus(PointerStatusType type, PointerStatusValue status, PointerStatus *reference)
         : type(type), statusValue(status), reference(reference) {}
@@ -93,8 +105,8 @@ public:
         return PointerStatus(PURE, status, NULL);
     }
 
-    static PointerStatus createImmitation(PointerStatus *ps) {
-        return PointerStatus(IMMITATION, DONT_KNOW, ps);
+    static PointerStatus createImitation(PointerStatus *ps) {
+        return PointerStatus(IMITATION, DONT_KNOW, ps);
     }
 
     static PointerStatus createReference(PointerStatus *ps) {
@@ -103,7 +115,7 @@ public:
 
     PointerStatusValue getStatus() const {
         switch (type) {
-        case IMMITATION: // fall through
+        case IMITATION: // fall through
         case REFERENCE: return reference->getStatus();
         case NONSENSE: throw "getStatus() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
@@ -116,7 +128,7 @@ public:
         // if this is an immutated, then update the original
         // if this is a reference status, then change this reference's type to PURE and set the value
         switch (type) {
-        case IMMITATION:
+        case IMITATION:
             reference->setStatus(status); break;
         case REFERENCE:
             this->type = PURE;
@@ -125,7 +137,6 @@ public:
             break;
         case NONSENSE: 
             throw "setStatus() not allowed on PointerStatusType of NONSENSE";
-            break;
         case PURE: // fall through
         default:
             this->statusValue = status;
@@ -135,7 +146,7 @@ public:
 
     int depth() const {
         switch (type) {
-        case IMMITATION: return reference->depth();
+        case IMITATION: return reference->depth();
         case REFERENCE: return 1 + reference->depth();
         case NONSENSE: throw "depth() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
@@ -153,7 +164,7 @@ public:
     /// Get the PointerStatus this pointer status refers to, or NULL if there is no such parent.
     PointerStatus *getParent() {
         switch (type) {
-        case IMMITATION: return reference->getParent();
+        case IMITATION: return reference->getParent();
         case REFERENCE: return reference;
         case NONSENSE: throw "getParent() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
@@ -163,14 +174,46 @@ public:
 
     void setParent(PointerStatus *parent) {
         switch (type) {
-        case IMMITATION: reference->setParent(parent); break;
+        case IMITATION: reference->setParent(parent); break;
         case REFERENCE: reference = parent; break;
         case NONSENSE: throw "setParent() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default:
             throw "setParent() not allowed on PointerStatusType of PURE";
+        }
+    }
+
+    std::string prettyPrint() {
+        std::string s = "TYPE=";
+        std::stringstream ss;
+        switch (this->type) {
+        case PURE:
+            s.append("PURE; ");
+            s.append("STATUSVALUE=");
+            switch (this->statusValue) {
+                case NIL: s.append("NIL; "); break;
+                case NON_NIL: s.append("NON_NIL; "); break;
+                case DONT_KNOW: s.append("DONT_KNOW; "); break;
+            default: break;
+            }
+            break;
+        case IMITATION:
+            s.append("IMITATION; ");
+            s.append("REFERENCE=");
+            ss << (((size_t)&reference)&0xffff);
+            s.append(ss.str());
+            break;
+        case REFERENCE:
+            s.append("REFERENCE; ");
+            s.append("REFERENCE=");
+            ss << (((size_t)&reference)&0xffff);
+            s.append(ss.str());
+            break;
+        default:
             break;
         }
+        s.append("\n");
+        return s;
     }
 
 };
