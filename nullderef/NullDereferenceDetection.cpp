@@ -58,7 +58,9 @@ struct NullDereferenceDetection : public FunctionPass {
             tracker.dump();
 
         } catch (const char* msg) {
+            errs().changeColor(raw_ostream::RED);
             errs() << msg << "\n";
+            errs().resetColor();
         }
 
         // return true if the function was modified, false otherwise [4]
