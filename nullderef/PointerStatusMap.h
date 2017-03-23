@@ -1,7 +1,6 @@
 #ifndef POINTER_STATUS_MAP_H
 #define POINTER_STATUS_MAP_H
 
-//#include <memory>
 #include <unordered_map>
 #include <llvm/IR/Value.h>
 #include <llvm/ADT/Hashing.h>
@@ -80,8 +79,8 @@ enum PointerStatusType {
 
 class PointerStatus {
     PointerStatusType type;
-    PointerStatusValue statusValue;
-    PointerStatus *reference;
+    PointerStatusValue statusValue; // only for PURE
+    PointerStatus *reference; // only for REFERENCE and IMMITATION
 
     PointerStatus(PointerStatusType type, PointerStatusValue status, PointerStatus *reference)
         : type(type), statusValue(status), reference(reference) {}
@@ -90,16 +89,16 @@ public:
     // nonsense constructor to be able to store values in map
     PointerStatus() : PointerStatus(NONSENSE, DONT_KNOW, NULL) {}
 
-    static PointerStatus nil() { return PointerStatus(PURE, NIL, NULL); }
-    static PointerStatus nonNil() { return PointerStatus(PURE, NON_NIL, NULL); }
-    static PointerStatus dontKnow() { return PointerStatus(PURE, DONT_KNOW, NULL); }
+    static PointerStatus createPure(PointerStatusValue status) {
+        return PointerStatus(PURE, status, NULL);
+    }
 
     static PointerStatus createImmitation(PointerStatus *ps) {
-        return PointerStatus(IMMITATION, ps->statusValue, ps);
+        return PointerStatus(IMMITATION, DONT_KNOW, ps);
     }
 
     static PointerStatus createReference(PointerStatus *ps) {
-        return PointerStatus(REFERENCE, ps->statusValue, ps);
+        return PointerStatus(REFERENCE, DONT_KNOW, ps);
     }
 
     PointerStatusValue getStatus() const {
@@ -141,30 +140,29 @@ public:
 
     /// If we dereference this, do we get a null dereference?
     bool isNullDeref() const {
-        switch (type) {
-        case PURE: return this->statusValue == NIL;
-        case IMMITATION:  return reference->isNullDeref();
-        case REFERENCE: // fall through
-        default: return false;
-        }
+        return this->statusValue == NIL && this->depth() == 0;
     }
 
-    bool canDereference() {
-        switch (type) {
-        case REFERENCE: return true;
-        case IMMITATION: return this->reference->canDereference();
-        case PURE: // fall through
-        default: return false;
-        }
-    }
+    bool hasParent() { return this->getParent() != NULL; }
 
-    /// Get the status this status refers to, or NULL in the case of a pure value.
-    PointerStatus *dereference() {
+    /// Get the PointerStatus this pointer status refers to, or NULL if there is no such parent.
+    PointerStatus *getParent() {
         switch (type) {
-        case IMMITATION: return reference->dereference();
+        case IMMITATION: return reference->getParent();
         case REFERENCE: return reference;
         case PURE: // fall through
         default: return NULL;
+        }
+    }
+
+    void setParent(PointerStatus *parent) {
+        switch (type) {
+        case IMMITATION: reference->setParent(parent); break;
+        case REFERENCE: reference = parent; break;
+        case PURE: // fall through
+        default:
+            errs() << "setParent(..) of PURE; this does not make sense\n";
+            break;
         }
     }
 
@@ -174,14 +172,14 @@ class PointerStatusMap {
     std::unordered_map<PointerKey, PointerStatus> map;
 public:
     /* We pass keys and statuses as value, make sure our types don't grown too large */
-    PointerStatus get(PointerKey key) { return this->map[key]; }
-    PointerStatus get(Value *value) { return this->map[PointerKey::createLlvmKey(value)]; }
+    PointerStatus& get(PointerKey key) { return this->map[key]; }
+    PointerStatus& get(Value *value) { return get(PointerKey::createLlvmKey(value)); }
 
     bool contains(PointerKey key) { return this->map.count(key); }
-    bool contains(Value *value) { return this->map.count(PointerKey::createLlvmKey(value)); }
+    bool contains(Value *value) { return this->contains(PointerKey::createLlvmKey(value)); }
 
     void put(PointerKey key, PointerStatus status) { this->map[key] = status; }
-    void put(Value *value, PointerStatus status) { this->map[PointerKey::createLlvmKey(value)] = status; }
+    void put(Value *value, PointerStatus status) { this->put(PointerKey::createLlvmKey(value), status); }
 
     void dump() {
         for (std::pair<PointerKey, PointerStatus> p : this->map) {
