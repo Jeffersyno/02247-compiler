@@ -1,6 +1,12 @@
-struct A { int value; };
+/*
+Access of the element of a struct when the struct pointer is null
+*/
+
+struct A { 
+	int value; 
+};
 
 int main() {
     struct A *x = 0;
-    x->value;
+    int value = x->value;
 }

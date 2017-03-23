@@ -5,6 +5,6 @@ Assign null to a pointer and assign it a new valid value before dereference. Sho
 int main() {
     int* ptr = 0;
     int value1 = 5;
-    ptr = &value;
+    ptr = &value1;
     int value2 = *ptr;
 }
