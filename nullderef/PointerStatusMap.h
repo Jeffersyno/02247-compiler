@@ -197,8 +197,8 @@ public:
             default: break;
             }
             break;
-        case IMMITATION:
-            s.append("IMMITATION; ");
+        case IMITATION:
+            s.append("IMITATION; ");
             s.append("REFERENCE=");
             ss << (((size_t)&reference)&0xffff);
             s.append(ss.str());
