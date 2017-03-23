@@ -45,6 +45,17 @@ public:
     }
 
     Value *getLlvmValue() const { return this->value; }
+
+//    std::string prettyPrint() {
+//        std::string s = "TYPE= ";
+//        if(type == PointerKeyType::LLVM_VALUE) { s.append("LLVM_VALUE; "); } else {
+//            s.append("STRUCT_FIELD; ");
+//        }
+//        s.append("VALUE=");
+//        value->dump();
+//        s.append("FIELDNO=");
+//        return s;
+//    }
 };
 
 // TODO: unused class, remove? This is maybe some trush form initial development?
@@ -171,6 +182,45 @@ public:
             throw "setParent() not allowed on PointerStatusType of PURE";
             break;
         }
+    }
+
+    std::string prettyPrint() {
+        std::string s = "TYPE=";
+        switch (this->type) {
+        case PURE:
+            s.append("PURE; ");
+            s.append("STATUSVALUE=");
+            switch (this->statusValue) {
+                case NIL: s.append("NIL; "); break;
+                case NON_NIL: s.append("NON_NIL; "); break;
+                case DONT_KNOW: s.append("DONT_KNOW; "); break;
+            default: break;
+            }
+            break;
+        case IMMITATION:
+            s.append("IMMITATION; ");
+            s.append("REFERENCE=");
+
+            break;
+        case REFERENCE:
+            s.append("REFERENCE; ");
+            s.append("REFERENCE=");
+
+            break;
+        default:
+            break;
+        }
+//        type;
+//            PointerStatusValue statusValue; // only for PURE
+//            PointerStatus *reference;
+
+//        if(type == PointerStatusType::PURE) { s.append("LLVM_VALUE; "); } else {
+//            s.append("STRUCT_FIELD; ");
+//        }
+//        s.append("VALUE=");
+//        value->dump();
+//        s.append("FIELDNO=");
+        return s;
     }
 
 };

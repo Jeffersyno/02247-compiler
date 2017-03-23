@@ -28,7 +28,8 @@ class TestSuite {
             case NULL_DEREF: return "NULL_DEREF";
             case MAYBE_NULL_DEREF: return "MAYBE_NULL_DEREF";
             case MISSED_DEFINITION: return "MISSED_DEFINITION";
-            case UNKNOWN_ERROR: return "UNKNOWN_ERROR";
+            case UNKNOWN_ERROR:
+        default: return "UNKNOWN_ERROR"; break;
         };
     }
 
