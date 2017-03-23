@@ -33,18 +33,18 @@ class TestSuite {
         };
     }
 
-    static std::string resultOutput(VisitResult result) {
-        return "RESULT: " + TestSuite::outputID(result);
+    static std::string resultOutput(VisitResult result, unsigned int instructionIndex) {
+        return "RESULT:" + TestSuite::outputID(result) + ";INDEX:" + std::to_string(instructionIndex);
     }
 
 public:
-    static void printResult(VisitResult result, Instruction& instruction) {
-        errs() << resultOutput(result) << " at ";
+    static void printResult(VisitResult result, Instruction& instruction, unsigned int instructionIndex) {
+        errs() << resultOutput(result, instructionIndex) << ";INSTRUCTION:";
         instruction.dump();
     }
 
-    static void printResult(VisitResult result) {
-        errs() << resultOutput(result) << "\n";
+    static void printResult(VisitResult result, unsigned int instructionIndex) {
+        errs() << resultOutput(result, instructionIndex) << "\n";
     }
 };
 

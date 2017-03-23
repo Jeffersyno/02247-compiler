@@ -36,6 +36,8 @@ struct NullDereferenceDetection : public FunctionPass {
 
         errs() << ">> Function " << function.getName() << " <<\n";
 
+        unsigned int instructionIndex = 1;
+
         try {
             // iterate over all instructions in a function (skip the basic blocks, see [1])
             bool continueLoop = true;
@@ -46,12 +48,14 @@ struct NullDereferenceDetection : public FunctionPass {
 
                 switch (tracker.visit(inst)) {
                 case OK: break;
-                case NULL_DEREF: TestSuite::printResult(NULL_DEREF, inst); break;
-                case MAYBE_NULL_DEREF: TestSuite::printResult(MAYBE_NULL_DEREF, inst); break;
-                case MISSED_DEFINITION: TestSuite::printResult(MISSED_DEFINITION, inst); continueLoop = false; break;
-                case UNKNOWN_ERROR: TestSuite::printResult(UNKNOWN_ERROR); continueLoop = false; break;
+                case NULL_DEREF: TestSuite::printResult(NULL_DEREF, inst, instructionIndex); break;
+                case MAYBE_NULL_DEREF: TestSuite::printResult(MAYBE_NULL_DEREF, inst, instructionIndex); break;
+                case MISSED_DEFINITION: TestSuite::printResult(MISSED_DEFINITION, inst, instructionIndex); continueLoop = false; break;
+                case UNKNOWN_ERROR: TestSuite::printResult(UNKNOWN_ERROR, instructionIndex); continueLoop = false; break;
                 }
                 if(!continueLoop) { break; }
+
+                ++instructionIndex;
             }
 
             errs() << "This is the dump of the tracker.\n";
