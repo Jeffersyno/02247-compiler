@@ -1,4 +1,7 @@
-// Dereference a multiple level pointer
+/*
+Dereference a multiple level pointer
+*/
+
 int main() {
     int *ptr1 = 0;
     int **ptr2 = &ptr1;

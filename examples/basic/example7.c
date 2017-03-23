@@ -1,4 +1,7 @@
-// Dereference a multiple level pointer without getting to null. Should not fail
+/*
+Dereference a multiple level pointer without getting to null. Should not fail
+*/
+
 int main() {
     int *ptr1 = 0;
     int **ptr2 = &ptr1;
