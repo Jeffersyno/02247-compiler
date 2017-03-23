@@ -113,3 +113,57 @@ function assert_dereference_at_instruction() {
   assert_events_count 0
 }
 
+@test "basic/example9" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_dereference_at_instruction "store i32 5, i32* %2, align 4"
+}
+
+@test "basic/example10" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_dereference_at_instruction "%5 = load i32, i32* %4, align 4"
+}
+
+@test "basic/example11" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_dereference_at_instruction "store i32 5, i32* %3, align 4"
+}
+
+@test "struct/example0" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_dereference_at_instruction "%5 = load i32, i32* %4, align 4"
+}
+
+@test "struct/example1" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_dereference_at_instruction "store i32 77, i32* %3, align 4"
+}
+
+@test "struct/example2" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_dereference_at_instruction "call void @llvm.memcpy.p0i8.p0i8.i64(i8* %4, i8* %5, i64 4, i32 4, i1 false)"
+}
+
