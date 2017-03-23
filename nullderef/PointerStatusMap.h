@@ -251,15 +251,9 @@ public:
     void dump() {
         for (std::pair<PointerKey, PointerStatus> p : this->map) {
             errs() << "key:   ";
-            p.first.getLlvmValue()->dump();
+            errs() << p.first.prettyPrint();
             errs() << "value: ";
-            switch (p.second.getStatus()) {
-            case NIL: errs() << "NIL"; break;
-            case NON_NIL: errs() << "NON NIL"; break;
-            case DONT_KNOW: errs() << "DONT KNOW"; break;
-            default: errs() << "NONSENSE"; break;
-            }
-
+            errs() << p.second.prettyPrint();
             errs()  << "\n";
         }
     }
