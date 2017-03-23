@@ -18,7 +18,6 @@ class PointerKey {
     Value *value;
     int fieldno;
 
-    //PointerKey() : PointerKey(PointerKeyType::NONSENSE, NULL, 0) {}
     PointerKey(PointerKeyType type, Value *value, int fieldno)
         : type(type), value(value), fieldno(fieldno) {}
 
@@ -100,7 +99,6 @@ enum PointerStatusValue {
 };
 
 enum PointerStatusType {
-    NONSENSE,
     PURE,
     IMITATION,
     REFERENCE
@@ -109,14 +107,14 @@ enum PointerStatusType {
 class PointerStatus {
     PointerStatusType type;
     PointerStatusValue statusValue; // only for PURE
-    PointerStatus *reference; // only for REFERENCE and IMITATION
+    PointerStatus *parent; // only for REFERENCE and IMITATION
 
-    PointerStatus(PointerStatusType type, PointerStatusValue status, PointerStatus *reference)
-        : type(type), statusValue(status), reference(reference) {}
+    PointerStatus(PointerStatusType type, PointerStatusValue status, PointerStatus *parent)
+        : type(type), statusValue(status), parent(parent) {}
 
 public:
     // nonsense constructor to be able to store values in map
-    PointerStatus() : PointerStatus(NONSENSE, DONT_KNOW, NULL) {}
+    PointerStatus(const PointerStatus &other) : PointerStatus(other.type, other.statusValue, other.parent) {}
 
     static PointerStatus createPure(PointerStatusValue status) {
         return PointerStatus(PURE, status, NULL);
@@ -133,8 +131,7 @@ public:
     PointerStatusValue getStatus() const {
         switch (type) {
         case IMITATION: // fall through
-        case REFERENCE: return reference->getStatus();
-        case NONSENSE: throw "getStatus() not allowed on PointerStatusType of NONSENSE";
+        case REFERENCE: return parent->getStatus();
         case PURE: // fall through
         default: return statusValue;
         }
@@ -146,14 +143,12 @@ public:
         // if this is a reference status, then change this reference's type to PURE and set the value
         switch (type) {
         case IMITATION:
-            reference->setStatus(status); break;
+            this->parent->setStatus(status); break;
         case REFERENCE:
             this->type = PURE;
             this->statusValue = status;
-            this->reference = NULL;
+            this->parent = NULL;
             break;
-        case NONSENSE: 
-            throw "setStatus() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default:
             this->statusValue = status;
@@ -163,9 +158,8 @@ public:
 
     int depth() const {
         switch (type) {
-        case IMITATION: return reference->depth();
-        case REFERENCE: return 1 + reference->depth();
-        case NONSENSE: throw "depth() not allowed on PointerStatusType of NONSENSE";
+        case IMITATION: return this->parent->depth();
+        case REFERENCE: return 1 + this->parent->depth();
         case PURE: // fall through
         default: return 0;
         }
@@ -181,9 +175,8 @@ public:
     /// Get the PointerStatus this pointer status refers to, or NULL if there is no such parent.
     PointerStatus *getParent() {
         switch (type) {
-        case IMITATION: return reference->getParent();
-        case REFERENCE: return reference;
-        case NONSENSE: throw "getParent() not allowed on PointerStatusType of NONSENSE";
+        case IMITATION: return parent->getParent();
+        case REFERENCE: return parent;
         case PURE: // fall through
         default: return NULL;
         }
@@ -191,9 +184,8 @@ public:
 
     void setParent(PointerStatus *parent) {
         switch (type) {
-        case IMITATION: reference->setParent(parent); break;
-        case REFERENCE: reference = parent; break;
-        case NONSENSE: throw "setParent() not allowed on PointerStatusType of NONSENSE";
+        case IMITATION: this->parent->setParent(parent); break;
+        case REFERENCE: this->parent = parent; break;
         case PURE: // fall through
         default:
             throw "setParent() not allowed on PointerStatusType of PURE";
@@ -206,7 +198,10 @@ public:
         switch (this->type) {
         case PURE:
             s.append("PURE; ");
-            s.append("STATUSVALUE=");
+            ss << ((size_t)this&0xffff);
+            s.append("ID=");
+            s.append(ss.str());
+            s.append("; STATUSVALUE=");
             switch (this->statusValue) {
                 case NIL: s.append("NIL; "); break;
                 case NON_NIL: s.append("NON_NIL; "); break;
@@ -217,16 +212,17 @@ public:
         case IMITATION:
             s.append("IMITATION; ");
             s.append("REFERENCE=");
-            ss << (((size_t)&reference)&0xffff);
+            ss << (((size_t)this->parent)&0xffff);
             s.append(ss.str());
             break;
         case REFERENCE:
             s.append("REFERENCE; ");
-            s.append("REFERENCE=");
-            ss << (((size_t)&reference)&0xffff);
+            s.append("PARENT=");
+            ss << (((size_t)this->parent)&0xffff);
             s.append(ss.str());
             break;
         default:
+            s.append("JEEEEZ ERROR");
             break;
         }
         s.append("\n");
@@ -236,24 +232,33 @@ public:
 };
 
 class PointerStatusMap {
-    std::unordered_map<PointerKey, PointerStatus> map;
+    std::unordered_map<PointerKey, PointerStatus*> map;
 public:
-    /* We pass keys and statuses as value, make sure our types don't grown too large */
-    PointerStatus& get(PointerKey key) { return this->map[key]; }
-    PointerStatus& get(Value *value) { return get(PointerKey::createLlvmKey(value)); }
+    /* We pass keys as value, make sure the type doesn't grown too large */
+    PointerStatus* get(PointerKey key) { return this->map[key]; }
+    PointerStatus* get(Value *value) { return get(PointerKey::createLlvmKey(value)); }
+
+    ~PointerStatusMap() {
+        for (std::pair<PointerKey, PointerStatus*> p : this->map) {
+            delete p.second;
+        }
+    }
 
     bool contains(PointerKey key) { return this->map.count(key); }
     bool contains(Value *value) { return this->contains(PointerKey::createLlvmKey(value)); }
 
-    void put(PointerKey key, PointerStatus status) { this->map[key] = status; }
-    void put(Value *value, PointerStatus status) { this->put(PointerKey::createLlvmKey(value), status); }
+    void put(PointerKey key, PointerStatus& status) {
+        PointerStatus *heapStatus = new PointerStatus(status);
+        this->map[key] = heapStatus;
+    }
+    void put(Value *value, PointerStatus& status) { this->put(PointerKey::createLlvmKey(value), status); }
 
     void dump() {
-        for (std::pair<PointerKey, PointerStatus> p : this->map) {
+        for (std::pair<PointerKey, PointerStatus*> p : this->map) {
             errs() << "key:   ";
             errs() << p.first.prettyPrint();
             errs() << "value: ";
-            errs() << p.second.prettyPrint();
+            errs() << p.second->prettyPrint();
             errs()  << "\n";
         }
     }

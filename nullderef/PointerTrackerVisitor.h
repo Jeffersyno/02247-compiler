@@ -31,7 +31,7 @@ public:
     VisitResult visitAllocaInst(llvm::AllocaInst &I) {
         if (I.getType()->isPointerTy()) {
             // create a new reference to something we don't know yet
-            this->map.put(PointerKey::createLlvmKey(&I), PointerStatus::createReference(NULL));
+            //this->map.put(PointerKey::createLlvmKey(&I), PointerStatus::createReference(NULL));
         }
 
         return OK;
@@ -47,17 +47,13 @@ public:
         if (dyn_cast<ConstantPointerNull>(op1)) {
             if (!this->map.contains(op2))
                 return MISSED_DEFINITION;
-            this->map.put(&I, PointerStatus::createPure(NIL));
-            this->map.get(op2).setParent(&this->map.get(&I));
+            //this->map.put(&I, PointerStatus::createPure(NIL));
+            //this->map.get(op2).setParent(&this->map.get(op1));
         }
         // CASE 2: value is loaded from some other register, and we know it!
-        else if (this->map.contains(op1)) {
+        else if (this->map.contains(op1) && this->map.contains(op2)) {
             //this->map.put(op2, PointerStatus::createReference(&this->map.get(op1)));
-        }
-        // CASE 3: we assign a non-null value (a reference to some value we don't
-        // know about)
-        else {
-            //this->map.put(op2, PointerStatus::creaI/());
+            //this->map.get(op2).setParent(&this->map.get(&I));
         }
 
         return OK;
@@ -67,22 +63,16 @@ public:
         // http://llvm.org/docs/LangRef.html#load-instruction
         Value *op = I.getOperand(0);
 
-        errs() << "LOAD ";
-        I.dump();
-        errs() << "   with operand ";
-        op->dump();
-
         // If the value we're loading is in our map, then consider
         // the same pointer status for the new value.
         if (this->map.contains(op)) {
-            errs() << "FOUND THE OP :-)\n";
-            PointerStatus status = this->map.get(op);
+            PointerStatus* status = this->map.get(op);
 
-            if (status.isNullDeref()) {
+            if (status->isNullDeref()) {
                 return NULL_DEREF;
-            } else if (status.hasParent()) {
-                errs() << status.getParent() << "\n";
-                this->map.put(&I, *status.getParent());
+            } else if (status->hasParent()) {
+                errs() << status->getParent() << "\n";
+                //this->map.put(&I, *status.getParent());
             } else {
                 // we are derefencing something we know but we can't dereference it?
                 errs() << "Dereferencing something we can't deref\n";
