@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <llvm/IR/Value.h>
 #include <llvm/ADT/Hashing.h>
+#include <sstream>
 
 using namespace llvm;
 
@@ -46,16 +47,16 @@ public:
 
     Value *getLlvmValue() const { return this->value; }
 
-//    std::string prettyPrint() {
-//        std::string s = "TYPE= ";
-//        if(type == PointerKeyType::LLVM_VALUE) { s.append("LLVM_VALUE; "); } else {
-//            s.append("STRUCT_FIELD; ");
-//        }
-//        s.append("VALUE=");
-//        value->dump();
-//        s.append("FIELDNO=");
-//        return s;
-//    }
+    std::string prettyPrint() {
+        std::string s = "TYPE= ";
+        if(type == PointerKeyType::LLVM_VALUE) { s.append("LLVM_VALUE; "); } else {
+            s.append("STRUCT_FIELD; ");
+        }
+        s.append("VALUE=");
+        value->dump();
+        s.append("FIELDNO=");
+        return s;
+    }
 };
 
 // TODO: unused class, remove? This is maybe some trush form initial development?
@@ -186,6 +187,7 @@ public:
 
     std::string prettyPrint() {
         std::string s = "TYPE=";
+        std::stringstream ss;
         switch (this->type) {
         case PURE:
             s.append("PURE; ");
@@ -200,16 +202,19 @@ public:
         case IMMITATION:
             s.append("IMMITATION; ");
             s.append("REFERENCE=");
-
+            ss << (((size_t)&reference)&0xffff);
+            s.append(ss.str());
             break;
         case REFERENCE:
             s.append("REFERENCE; ");
             s.append("REFERENCE=");
-
+            ss << (((size_t)&reference)&0xffff);
+            s.append(ss.str());
             break;
         default:
             break;
         }
+        s.append("\n");
         return s;
     }
 
