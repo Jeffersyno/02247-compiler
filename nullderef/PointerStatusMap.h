@@ -92,7 +92,7 @@ public:
 
     static PointerStatus nil() { return PointerStatus(PURE, NIL, NULL); }
     static PointerStatus nonNil() { return PointerStatus(PURE, NON_NIL, NULL); }
-    static PointerStatus dontKnow() { return PointerStatus(PURE, DONT_KNOW, NULL); }
+    static PointerStatus dontKnow() { return PointerStatus(); }
 
     static PointerStatus createImmitation(PointerStatus *ps) {
         return PointerStatus(IMMITATION, ps->statusValue, ps);
@@ -107,6 +107,7 @@ public:
         case IMMITATION: // fall through
         case REFERENCE: return reference->getStatus();
         case PURE: // fall through
+        case NONSENSE: // fall through
         default: return statusValue;
         }
     }
@@ -123,6 +124,9 @@ public:
             this->statusValue = status;
             this->reference = NULL;
             break;
+        case NONSENSE: 
+            throw "setStatus() not allowed on PointerStatusType of NONSENSE";
+            break;
         case PURE: // fall through
         default:
             this->statusValue = status;
@@ -134,6 +138,7 @@ public:
         switch (type) {
         case IMMITATION: return reference->depth();
         case REFERENCE: return 1 + reference->depth();
+        case NONSENSE: throw "depth() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default: return 0;
         }
@@ -144,6 +149,7 @@ public:
         switch (type) {
         case PURE: return this->statusValue == NIL;
         case IMMITATION:  return reference->isNullDeref();
+        case NONSENSE: throw "isNullDeref() not allowed on PointerStatusType of NONSENSE";
         case REFERENCE: // fall through
         default: return false;
         }
@@ -153,6 +159,7 @@ public:
         switch (type) {
         case REFERENCE: return true;
         case IMMITATION: return this->reference->canDereference();
+        case NONSENSE: throw "canDerefence() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default: return false;
         }
@@ -163,6 +170,7 @@ public:
         switch (type) {
         case IMMITATION: return reference->dereference();
         case REFERENCE: return reference;
+        case NONSENSE: throw "dereference() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default: return NULL;
         }
