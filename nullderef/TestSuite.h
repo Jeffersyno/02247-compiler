@@ -17,8 +17,8 @@ class TestSuite {
             case OK: return "Ok";
             case NULL_DEREF: return "Null dereference";
             case MAYBE_NULL_DEREF: return "Possible null dereference";
-            case UNKNOWN_ERROR:
-            default: return "Unknown error";
+            case MISSED_DEFINITION: return "Error, previous needed instruction not found in the map";
+            case UNKNOWN_ERROR: return "Unknown error";
         };
     }
 
@@ -27,8 +27,8 @@ class TestSuite {
             case OK: return "OK";
             case NULL_DEREF: return "NULL_DEREF";
             case MAYBE_NULL_DEREF: return "MAYBE_NULL_DEREF";
-            case UNKNOWN_ERROR:
-            default: return "UNKNOWN_ERROR";
+            case MISSED_DEFINITION: return "MISSED_DEFINITION";
+            case UNKNOWN_ERROR: return "UNKNOWN_ERROR";
         };
     }
 
