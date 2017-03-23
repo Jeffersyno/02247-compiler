@@ -18,6 +18,9 @@ BCFILE="$BCFOLDER/$FILE.bc"
 # compilation failed.
 make -C build || exit
 
+# Make the folder
+mkdir -p $(dirname "$BCFILE")
+
 # Compile bitcode if it doesn't exist or if its old
 if [[ ! -e $BCFILE || $CFILE -nt $BCFILE ]]; then
     echo "Compiling $CFILE..."

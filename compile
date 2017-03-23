@@ -26,6 +26,9 @@ OFILE=/dev/null
 # compilation failed.
 make -C build || exit
 
+# Make the folder
+mkdir -p $(dirname "$BCFILE")
+
 # Compile the example `examples/hello.c' file with 
 # clang with the null pointer detection pass enabled.
 CLANG="$CLANG -Xclang -load \
