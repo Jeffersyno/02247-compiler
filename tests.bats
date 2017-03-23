@@ -33,66 +33,83 @@ function assert_dereference_at_instruction() {
   	assert_line $(buildDereferenceRegexForInstruction $1)
 }
 
-@test "Example 1" {
-  run ./run example1
+# setup() {}
+
+@test "basic/example0" {
+  run ./run $BATS_TEST_DESCRIPTION
   assert_failure
 
-  run ./opt example1
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_dereference_at_instruction "%4 = load i32, i32* %3, align 4"
+}
+
+@test "basic/example1" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_dereference_at_instruction "%4 = load i32*, i32** %3, align 8"
+}
+
+@test "basic/example2" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_success
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 0
+}
+
+@test "basic/example3" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 2
   assert_dereference_at_instruction "%7 = load i32, i32* %6, align 4"
   assert_dereference_at_instruction "%9 = load i32, i32* %8, align 4"
 }
 
-@test "Example 2" {
-  # WHY IS THIS RUNNING WITHOUT RUNTIME ERROR?!?!?!?
-  # it's probably optimized away
-  run ./run example2
-  assert_failure
+@test "basic/example4" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_success
 
-  run ./opt example2
-  assert_events_count 1
-  assert_dereference_at_instruction "%3 = load i32, i32* %2, align 4"
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 0
 }
 
-@test "Example 3" {
-  run ./run example3
+@test "basic/example5" {
+  run ./run $BATS_TEST_DESCRIPTION
   assert_failure
 
-  run ./opt example3
-  assert_events_count 1
-  assert_dereference_at_instruction "%4 = load i32*, i32** %3, align 8"
-}
-
-@test "Example 4" {
-  run ./run example4
-  assert_failure
-
-  run ./opt example4
+  run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
   assert_dereference_at_instruction "%10 = load i32, i32* %9, align 4"
 }
 
-@test "Example 5" {
-  run ./run example5
+@test "basic/example6" {
+  run ./run $BATS_TEST_DESCRIPTION
   assert_failure
 
-  run ./opt example5
+  run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction "%6 = load i32, i32* %5, align 4"
+  assert_dereference_at_instruction "%8 = load i32, i32* %7, align 4"
 }
 
-@test "Example 7" {
-  run ./run example7
+@test "basic/example7" {
+  run ./run $BATS_TEST_DESCRIPTION
   assert_success
 
-  run ./opt example7
+  run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 0
 }
 
-@test "Example 8" {
-  run ./run example8
+@test "basic/example8" {
+  run ./run $BATS_TEST_DESCRIPTION
   assert_success
 
-  run ./opt example8
+  run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 0
 }
+

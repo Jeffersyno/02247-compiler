@@ -1,3 +1,6 @@
+/*
+Test for dereference of a second level pointer
+*/
 
 int main() {
     int** ptr1 = 0;
