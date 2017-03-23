@@ -105,6 +105,7 @@ public:
         switch (type) {
         case IMMITATION: // fall through
         case REFERENCE: return reference->getStatus();
+        case NONSENSE: throw "getStatus() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default: return statusValue;
         }
@@ -122,6 +123,9 @@ public:
             this->statusValue = status;
             this->reference = NULL;
             break;
+        case NONSENSE: 
+            throw "setStatus() not allowed on PointerStatusType of NONSENSE";
+            break;
         case PURE: // fall through
         default:
             this->statusValue = status;
@@ -133,6 +137,7 @@ public:
         switch (type) {
         case IMMITATION: return reference->depth();
         case REFERENCE: return 1 + reference->depth();
+        case NONSENSE: throw "depth() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default: return 0;
         }
@@ -150,6 +155,7 @@ public:
         switch (type) {
         case IMMITATION: return reference->getParent();
         case REFERENCE: return reference;
+        case NONSENSE: throw "getParent() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default: return NULL;
         }
@@ -159,9 +165,10 @@ public:
         switch (type) {
         case IMMITATION: reference->setParent(parent); break;
         case REFERENCE: reference = parent; break;
+        case NONSENSE: throw "setParent() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default:
-            errs() << "setParent(..) of PURE; this does not make sense\n";
+            throw "setParent() not allowed on PointerStatusType of PURE";
             break;
         }
     }
