@@ -50,9 +50,16 @@ public:
             auto parent = this->map.put(&I, PointerStatus::createPure(NIL));
             this->map.get(op2)->setParent(parent);
         }
-        // CASE 2: value is loaded from some other register, and we know it!
-        else if (this->map.contains(op1) && this->map.contains(op2)) {
-            this->map.get(op2)->setParent(this->map.get(op1));
+        else if (this->map.contains(op2)) {
+            // CASE 2: value is loaded from some other register, and we know it!
+            if (this->map.contains(op1)) {
+                this->map.get(op2)->setParent(this->map.get(op1));
+
+            // CASE 3: we don't know what we've stored in 'op2'
+            } else {
+                // TODO we really should look at the value of op1 (see example4)
+                this->map.put(op2, PointerStatus::createPure(DONT_KNOW));
+            }
         }
 
         return OK;
@@ -72,10 +79,6 @@ public:
             } else if (status->hasParent()) {
                 errs() << status->getParent() << "\n";
                 this->map.put(&I, *status->getParent());
-            } else {
-                // we are derefencing something we know but we can't dereference it?
-                errs() << "Dereferencing something we can't deref\n";
-                return UNKNOWN_ERROR;
             }
         } else {
             return MISSED_DEFINITION;
