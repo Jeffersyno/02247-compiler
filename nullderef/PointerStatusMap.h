@@ -105,8 +105,8 @@ public:
         switch (type) {
         case IMMITATION: // fall through
         case REFERENCE: return reference->getStatus();
+        case NONSENSE: throw "getStatus() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
-        case NONSENSE: // fall through
         default: return statusValue;
         }
     }
@@ -155,7 +155,7 @@ public:
         switch (type) {
         case IMMITATION: return reference->getParent();
         case REFERENCE: return reference;
-        case NONSENSE: throw "canDerefence() not allowed on PointerStatusType of NONSENSE";
+        case NONSENSE: throw "getParent() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default: return NULL;
         }
@@ -165,10 +165,10 @@ public:
         switch (type) {
         case IMMITATION: reference->setParent(parent); break;
         case REFERENCE: reference = parent; break;
-        case NONSENSE: throw "dereference() not allowed on PointerStatusType of NONSENSE";
+        case NONSENSE: throw "setParent() not allowed on PointerStatusType of NONSENSE";
         case PURE: // fall through
         default:
-            errs() << "setParent(..) of PURE; this does not make sense\n";
+            throw "setParent() not allowed on PointerStatusType of PURE";
             break;
         }
     }
