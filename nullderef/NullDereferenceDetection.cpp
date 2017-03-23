@@ -37,7 +37,8 @@ struct NullDereferenceDetection : public FunctionPass {
         errs() << ">> Function " << function.getName() << " <<\n";
 
         // iterate over all instructions in a function (skip the basic blocks, see [1])
-        for (inst_iterator iptr = inst_begin(function), i_end = inst_end(function); iptr != i_end; ++iptr) {
+        bool continueLoop = true;
+        for (inst_iterator iptr = inst_begin(function), i_end = inst_end(function); iptr != i_end && continueLoop; ++iptr) {
 
             // get the reference of an instruction from an iterator (see [2])
             Instruction& inst = *iptr;
@@ -46,8 +47,8 @@ struct NullDereferenceDetection : public FunctionPass {
             case OK: break;
             case NULL_DEREF: TestSuite::printResult(NULL_DEREF, inst); break;
             case MAYBE_NULL_DEREF: TestSuite::printResult(MAYBE_NULL_DEREF, inst); break;
-            case MISSED_DEFINITION: TestSuite::printResult(MISSED_DEFINITION, inst); break;
-            case UNKNOWN_ERROR: TestSuite::printResult(UNKNOWN_ERROR); break;
+            case MISSED_DEFINITION: TestSuite::printResult(MISSED_DEFINITION, inst); continueLoop = false; break;
+            case UNKNOWN_ERROR: TestSuite::printResult(UNKNOWN_ERROR); continueLoop = false; break;
             }
 
         }
