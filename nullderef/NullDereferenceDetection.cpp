@@ -58,7 +58,7 @@ struct NullDereferenceDetection : public FunctionPass {
                 ++instructionIndex;
             }
 
-            errs() << "This is the dump of the tracker.\n";
+            errs() << "\n\n[DUMP OF INTERNAL DATA STRUCTURE]\n";
             tracker.dump();
 
         } catch (const char* msg) {

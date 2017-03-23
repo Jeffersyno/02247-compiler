@@ -47,19 +47,19 @@ public:
     Value *getLlvmValue() const { return this->value; }
 
     std::string prettyPrint() {
-        std::string s = "TYPE=";
+        std::string s;
         std::string type_str;
         llvm::raw_string_ostream rso(type_str);
         switch (type) {
         case LLVM_VALUE:
-            s.append("LLVM_VALUE; ");
+            s.append("LLVM_VALUE: ");
             s.append("VALUE=");
             this->value->print(rso);
             s.append(rso.str());
             s.append("; ");
             break;
         case STRUCT_FIELD:
-            s.append("STRUCT_FIELD; ");
+            s.append("STRUCT_FIELD: ");
             s.append("VALUE=");
             this->value->print(rso);
             s.append(rso.str());
@@ -193,40 +193,37 @@ public:
     }
 
     std::string prettyPrint() {
-        std::string s = "TYPE=";
         std::stringstream ss;
-        switch (this->type) {
+        switch (type) {
         case PURE:
-            s.append("PURE; ");
+            ss << "PURE: ID=";
             ss << ((size_t)this&0xffff);
-            s.append("ID=");
-            s.append(ss.str());
-            s.append("; STATUSVALUE=");
-            switch (this->statusValue) {
-                case NIL: s.append("NIL; "); break;
-                case NON_NIL: s.append("NON_NIL; "); break;
-                case DONT_KNOW: s.append("DONT_KNOW; "); break;
-            default: break;
+            ss << "; STATUS=";
+            switch (statusValue) {
+            case NIL: ss << "NIL; "; break;
+            case NON_NIL: ss << "NON_NIL; "; break;
+            case DONT_KNOW: ss << "DONT_KNOW; "; break;
+            default: ss << "???"; break;
             }
             break;
         case IMITATION:
-            s.append("IMITATION; ");
-            s.append("REFERENCE=");
+            ss << "IMITATION: ID=";
+            ss << (((size_t) this)&0xffff);
+            ss << "; REFERENCE=";
             ss << (((size_t)this->parent)&0xffff);
-            s.append(ss.str());
             break;
         case REFERENCE:
-            s.append("REFERENCE; ");
-            s.append("PARENT=");
+            ss << "REFERENCE: ID=";
+            ss << (((size_t) this)&0xffff);
+            ss << "; PARENT=";
             ss << (((size_t)this->parent)&0xffff);
-            s.append(ss.str());
             break;
         default:
-            s.append("JEEEEZ ERROR");
+            ss << "JEEZ ERROR";
             break;
         }
-        s.append("\n");
-        return s;
+        ss << "\n";
+        return ss.str();
     }
 
 };
@@ -247,18 +244,23 @@ public:
     bool contains(PointerKey key) { return this->map.count(key); }
     bool contains(Value *value) { return this->contains(PointerKey::createLlvmKey(value)); }
 
-    void put(PointerKey key, PointerStatus& status) {
+    PointerStatus* put(PointerKey key, const PointerStatus& status) {
         PointerStatus *heapStatus = new PointerStatus(status);
         this->map[key] = heapStatus;
+        return heapStatus;
     }
-    void put(Value *value, PointerStatus& status) { this->put(PointerKey::createLlvmKey(value), status); }
+    PointerStatus* put(Value *value, const PointerStatus& status) { this->put(PointerKey::createLlvmKey(value), status); }
 
     void dump() {
         for (std::pair<PointerKey, PointerStatus*> p : this->map) {
             errs() << "key:   ";
             errs() << p.first.prettyPrint();
             errs() << "value: ";
-            errs() << p.second->prettyPrint();
+            if (p.second == NULL) {
+                errs() << "NULL\n";
+            } else {
+                errs() << p.second->prettyPrint();
+            }
             errs()  << "\n";
         }
     }
