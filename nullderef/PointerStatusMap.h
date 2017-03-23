@@ -137,7 +137,6 @@ public:
             break;
         case NONSENSE: 
             throw "setStatus() not allowed on PointerStatusType of NONSENSE";
-            break;
         case PURE: // fall through
         default:
             this->statusValue = status;
@@ -181,7 +180,6 @@ public:
         case PURE: // fall through
         default:
             throw "setParent() not allowed on PointerStatusType of PURE";
-            break;
         }
     }
 
