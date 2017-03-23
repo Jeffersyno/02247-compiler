@@ -48,13 +48,30 @@ public:
     Value *getLlvmValue() const { return this->value; }
 
     std::string prettyPrint() {
-        std::string s = "TYPE= ";
-        if(type == PointerKeyType::LLVM_VALUE) { s.append("LLVM_VALUE; "); } else {
+        std::string s = "TYPE=";
+        std::string type_str;
+        llvm::raw_string_ostream rso(type_str);
+        switch (type) {
+        case LLVM_VALUE:
+            s.append("LLVM_VALUE; ");
+            s.append("VALUE=");
+            this->value->print(rso);
+            s.append(rso.str());
+            s.append("; ");
+            break;
+        case STRUCT_FIELD:
             s.append("STRUCT_FIELD; ");
+            s.append("VALUE=");
+            this->value->print(rso);
+            s.append(rso.str());
+            s.append("; ");
+            s.append("FIELDNO=");
+            s.append(std::to_string(fieldno));
+            break;
+        default:
+            break;
         }
-        s.append("VALUE=");
-        value->dump();
-        s.append("FIELDNO=");
+        s.append("\n");
         return s;
     }
 };
@@ -234,15 +251,9 @@ public:
     void dump() {
         for (std::pair<PointerKey, PointerStatus> p : this->map) {
             errs() << "key:   ";
-            p.first.getLlvmValue()->dump();
+            errs() << p.first.prettyPrint();
             errs() << "value: ";
-            switch (p.second.getStatus()) {
-            case NIL: errs() << "NIL"; break;
-            case NON_NIL: errs() << "NON NIL"; break;
-            case DONT_KNOW: errs() << "DONT KNOW"; break;
-            default: errs() << "NONSENSE"; break;
-            }
-
+            errs() << p.second.prettyPrint();
             errs()  << "\n";
         }
     }
