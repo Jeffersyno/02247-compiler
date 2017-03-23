@@ -210,16 +210,6 @@ public:
         default:
             break;
         }
-//        type;
-//            PointerStatusValue statusValue; // only for PURE
-//            PointerStatus *reference;
-
-//        if(type == PointerStatusType::PURE) { s.append("LLVM_VALUE; "); } else {
-//            s.append("STRUCT_FIELD; ");
-//        }
-//        s.append("VALUE=");
-//        value->dump();
-//        s.append("FIELDNO=");
         return s;
     }
 
