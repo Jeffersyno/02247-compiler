@@ -33,7 +33,6 @@ public:
             // create a new reference to something we don't know yet
             this->map.put(PointerKey::createLlvmKey(&I), PointerStatus::createReference(NULL));
         }
-
         return OK;
     }
 
@@ -45,10 +44,10 @@ public:
         // Safety check: in order to store a value we should have detected an allocation first
         if (!this->map.contains(op2)) { return MISSED_DEFINITION; }
 
-        if (this->map.get(op2)->isNullDeref()) {
-            // The address to store op1 is  null: null pointer dereference happening
-            return NULL_DEREF;
-        } else if (dyn_cast<ConstantPointerNull>(op1)) {
+        // The address to store op1 is zero: null pointer dereference happening
+        if (this->map.get(op2)->isNullDeref()) { return NULL_DEREF; }
+
+        if (dyn_cast<ConstantPointerNull>(op1)) {
             // Constant NULL is stored (must be in a pointer type): we now know that op2 points to a NULL value
             auto parent = this->map.put(&I, PointerStatus::createPure(NIL));
             this->map.get(op2)->setParent(parent);
