@@ -2,9 +2,10 @@
 #define POINTER_STATUS_MAP_H
 
 #include <unordered_map>
+#include <stack>
+#include <sstream>
 #include <llvm/IR/Value.h>
 #include <llvm/ADT/Hashing.h>
-#include <sstream>
 
 using namespace llvm;
 
@@ -222,8 +223,18 @@ public:
 
 };
 
+struct PointerStatusMapFrameItem {
+    PointerKey key;
+    PointerStatus *oldStatus;
+    PointerStatus *newStatus;
+
+    bool isDelimiter() { return oldStatus==NULL && newStatus==NULL; }
+};
+
 class PointerStatusMap {
     std::unordered_map<PointerKey, PointerStatus*> map;
+    std::stack<PointerStatusMapFrameItem> stack;
+
 public:
     // We pass keys as value, make sure the type doesn't grown too large
     // If the key is not presented, it will create a new object and key and return a pointer to the object
