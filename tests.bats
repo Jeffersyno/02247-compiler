@@ -123,7 +123,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction "store i32 5, i32* %2, align 4"
+  assert_dereference_at_instruction 4 "store i32 5, i32* %2, align 4"
 }
 
 @test "basic/example10" {

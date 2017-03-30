@@ -226,6 +226,7 @@ class PointerStatusMap {
     std::unordered_map<PointerKey, PointerStatus*> map;
 public:
     // We pass keys as value, make sure the type doesn't grown too large
+    // If the key is not presented, it will create a new object and key and return a pointer to the object
     PointerStatus* get(PointerKey key) { return this->map[key]; }
     PointerStatus* get(Value *value) { return get(PointerKey::createLlvmKey(value)); }
 

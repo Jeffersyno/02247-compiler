@@ -42,24 +42,22 @@ public:
         Value *op1 = I.getOperand(0); // value to be stored
         Value *op2 = I.getOperand(1); // place to store the value
 
-        // CASE 1: constant NULL is stored (must be in a pointer type)
-        // We now know that op2 points to a NULL value.
-        if (dyn_cast<ConstantPointerNull>(op1)) {
-            if (!this->map.contains(op2))
-                return MISSED_DEFINITION;
+        // Safety check: in order to store a value we should have detected an allocation first
+        if (!this->map.contains(op2)) { return MISSED_DEFINITION; }
+
+        if (this->map.get(op2)->isNullDeref()) {
+            // The address to store op1 is  null: null pointer dereference happening
+            return NULL_DEREF;
+        } else if (dyn_cast<ConstantPointerNull>(op1)) {
+            // Constant NULL is stored (must be in a pointer type): we now know that op2 points to a NULL value
             auto parent = this->map.put(&I, PointerStatus::createPure(NIL));
             this->map.get(op2)->setParent(parent);
-        }
-        else if (this->map.contains(op2)) {
-            // CASE 2: value is loaded from some other register, and we know it!
-            if (this->map.contains(op1)) {
-                this->map.get(op2)->setParent(this->map.get(op1));
-
-            // CASE 3: we don't know what we've stored in 'op2'
-            } else {
-                // TODO we really should look at the value of op1 (see example4)
-                this->map.put(op2, PointerStatus::createPure(DONT_KNOW));
-            }
+        } else if (this->map.contains(op1)) {
+            // Value is loaded from some other register, and we know it
+            this->map.get(op2)->setParent(this->map.get(op1));
+        } else {
+            // Update the value of the already registered operand
+            this->map.put(op2, PointerStatus::createPure(DONT_KNOW));
         }
 
         return OK;
