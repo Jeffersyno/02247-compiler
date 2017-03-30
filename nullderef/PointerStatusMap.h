@@ -238,12 +238,12 @@ public:
     bool contains(PointerKey key) { return this->map.count(key); }
     bool contains(Value *value) { return this->contains(PointerKey::createLlvmKey(value)); }
 
-    PointerStatus* put(PointerKey key, const PointerStatus& status) {
+    PointerStatus* put(PointerKey key, const PointerStatus &status) {
         PointerStatus *heapStatus = new PointerStatus(status);
         this->map[key] = heapStatus;
         return heapStatus;
     }
-    PointerStatus* put(Value *value, const PointerStatus& status) { this->put(PointerKey::createLlvmKey(value), status); }
+    PointerStatus* put(Value *value, const PointerStatus &status) { return this->put(PointerKey::createLlvmKey(value), status); }
 
     void dump() {
         for (std::pair<PointerKey, PointerStatus*> p : this->map) {
