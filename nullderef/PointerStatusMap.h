@@ -75,8 +75,6 @@ public:
     }
 };
 
-// TODO: unused class, remove? This is maybe some trush form initial development?
-// It's the hash function used by the map, don't remove.
 namespace std {
     template<> struct hash<PointerKey> {
         size_t operator()(PointerKey const& key) const noexcept { return key.hash(); }
@@ -109,11 +107,11 @@ class PointerStatus {
     PointerStatusValue statusValue; // only for PURE
     PointerStatus *parent; // only for REFERENCE and IMITATION
 
-    PointerStatus(PointerStatusType type, PointerStatusValue status, PointerStatus *parent)
-        : type(type), statusValue(status), parent(parent) {}
+    PointerStatus(PointerStatusType type, PointerStatusValue statusValue, PointerStatus *parent)
+        : type(type), statusValue(statusValue), parent(parent) {}
 
 public:
-    // nonsense constructor to be able to store values in map
+    // Nonsense constructor to be able to store values in map
     PointerStatus(const PointerStatus &other) : PointerStatus(other.type, other.statusValue, other.parent) {}
 
     static PointerStatus createPure(PointerStatusValue status) {
@@ -132,18 +130,18 @@ public:
         switch (type) {
         case IMITATION: // fall through
         case REFERENCE: return parent->getStatus();
-        case PURE: // fall through
-        default: return statusValue;
+        case PURE: return statusValue;
         }
     }
 
     void setStatus(PointerStatusValue status) {
-        // if this is a pure status, then update the statusValue
-        // if this is an immutated, then update the original
-        // if this is a reference status, then change this reference's type to PURE and set the value
+        // If this is a pure status, then update the statusValue
+        // If this is an imitation, then update the original
+        // If this is a reference status, then change this reference's type to PURE and set the value
         switch (type) {
         case IMITATION:
-            this->parent->setStatus(status); break;
+            this->parent->setStatus(status);
+            break;
         case REFERENCE:
             this->type = PURE;
             this->statusValue = status;
@@ -160,8 +158,7 @@ public:
         switch (type) {
         case IMITATION: return this->parent->depth();
         case REFERENCE: return 1 + this->parent->depth();
-        case PURE: // fall through
-        default: return 0;
+        case PURE: return 0;
         }
     }
 
@@ -172,13 +169,12 @@ public:
 
     bool hasParent() { return this->getParent() != NULL; }
 
-    /// Get the PointerStatus this pointer status refers to, or NULL if there is no such parent.
+    /// Get the PointerStatus this pointer status refers to, or NULL if there is no such parent
     PointerStatus *getParent() {
         switch (type) {
         case IMITATION: return parent->getParent();
         case REFERENCE: return parent;
-        case PURE: // fall through
-        default: return NULL;
+        case PURE: return NULL;
         }
     }
 
@@ -186,9 +182,7 @@ public:
         switch (type) {
         case IMITATION: this->parent->setParent(parent); break;
         case REFERENCE: this->parent = parent; break;
-        case PURE: // fall through
-        default:
-            throw "setParent() not allowed on PointerStatusType of PURE";
+        case PURE: throw "setParent() not allowed on PointerStatusType of PURE";
         }
     }
 
@@ -231,7 +225,7 @@ public:
 class PointerStatusMap {
     std::unordered_map<PointerKey, PointerStatus*> map;
 public:
-    /* We pass keys as value, make sure the type doesn't grown too large */
+    // We pass keys as value, make sure the type doesn't grown too large
     PointerStatus* get(PointerKey key) { return this->map[key]; }
     PointerStatus* get(Value *value) { return get(PointerKey::createLlvmKey(value)); }
 

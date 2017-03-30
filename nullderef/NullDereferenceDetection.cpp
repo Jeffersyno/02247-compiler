@@ -32,12 +32,9 @@ struct NullDereferenceDetection : public FunctionPass {
     bool runOnFunction(Function &function) override {
         PointerTrackerVisitor tracker;
 
-        // TODO implement assignment 2
-
         errs() << ">> Function " << function.getName() << " <<\n";
 
         unsigned int instructionIndex = 1;
-
         try {
             // iterate over all instructions in a function (skip the basic blocks, see [1])
             bool continueLoop = true;

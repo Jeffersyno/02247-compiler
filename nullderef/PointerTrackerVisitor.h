@@ -21,7 +21,7 @@ enum VisitResult {
     UNKNOWN_ERROR
 };
 
-// Instruction visitor defintion
+/// Instruction visitor definition
 class PointerTrackerVisitor : public llvm::InstVisitor<PointerTrackerVisitor, VisitResult> {
 public:
     void dump() {
