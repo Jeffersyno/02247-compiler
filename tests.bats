@@ -144,6 +144,16 @@ function assert_dereference_at_instruction() {
   assert_dereference_at_instruction 5 "store i32 5, i32* %3, align 4"
 }
 
+@test "basic/example12" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 2
+  assert_dereference_at_instruction 19 "%13 = load i32**, i32*** %12, align 8"
+  assert_dereference_at_instruction 24 "%17 = load i32***, i32**** %16, align 8"
+}
+
 @test "struct/example0" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
