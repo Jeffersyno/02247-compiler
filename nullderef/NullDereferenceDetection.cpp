@@ -33,6 +33,19 @@ static void printResult(ErrorCode code, Instruction& inst, size_t instNumber) {
     }
 }
 
+static void printError(const char* msg) {
+    errs().changeColor(raw_ostream::RED);
+    errs() << "ERROR: " << msg << "\n";
+    errs().resetColor();
+}
+
+static void printError(const char* msg, llvm::Instruction &I) {
+    printError(msg);
+    errs() << "    while dealing with ";
+    I.print(errs());
+    errs() << '\n';
+}
+
 struct NullDereferenceDetection : public FunctionPass {
     static char ID;
     NullDereferenceDetection() : FunctionPass(ID) {}
@@ -43,29 +56,26 @@ struct NullDereferenceDetection : public FunctionPass {
 
         errs() << "\n";
 
-        try {
-            // iterate over all instructions in a function (skip the basic blocks, see [1])
-            for (inst_iterator iptr=inst_begin(function), i_end = inst_end(function); iptr != i_end; ++iptr) {
+        // iterate over all instructions in a function (skip the basic blocks, see [1])
+        for (inst_iterator iptr=inst_begin(function), i_end = inst_end(function); iptr != i_end; ++iptr) {
 
-                // get the reference of an instruction from an iterator (see [2])
-                Instruction& inst = *iptr;
+            // get the reference of an instruction from an iterator (see [2])
+            Instruction& inst = *iptr;
 
-                ErrorCode result = tracker.visit(inst);
-                printResult(result, inst, ++instNumber);
+            ErrorCode result;
+            try { result = tracker.visit(inst); }
+            catch(const char *msg) { printError(msg, inst); }
 
-                if ((result & ERROR) == ERROR) {
-                    break;
-                }
+            printResult(result, inst, ++instNumber);
+            if ((result & ERROR) == ERROR) {
+                break;
             }
+        }
 
+        try {
             errs() << "\n[DUMP OF INTERNAL DATA STRUCTURE]\n";
             tracker.dump();
-
-        } catch (const char* msg) {
-            errs().changeColor(raw_ostream::RED);
-            errs() << msg << "\n";
-            errs().resetColor();
-        }
+        } catch (const char *msg) { printError(msg); }
 
         // return true if the function was modified, false otherwise [4]
         return false;

@@ -72,11 +72,13 @@ public:
                 return handleDerefError(I, status);
             } else if (status->hasParent()) {
                 this->map.put(&I, *status->getParent());
+            } else {
+                this->map.put(&I, PointerStatus::createPure(DONT_KNOW));
             }
+            return OK;
         } else {
             return MISSED_DEFINITION;
         }
-        return OK;
     }
 
     ErrorCode visitGetElementPtrInst(llvm::GetElementPtrInst &I) {
@@ -97,13 +99,40 @@ public:
         PointerStatus *elemPtrStatus;
 
         if (!this->map.contains(elemPtrKey)) {
-            elemPtrStatus = this->map.put(elemPtrKey, PointerStatus::createAlias(op1status));
+            elemPtrStatus = this->map.put(elemPtrKey, PointerStatus::createPure(op1status->getStatus()));
         } else {
             elemPtrStatus = this->map.get(elemPtrKey);
         }
 
         this->map.put(&I, PointerStatus::createAlias(elemPtrStatus));
 
+        return OK;
+    }
+
+    ErrorCode visitBitCastInst(BitCastInst &I) {
+        Value *op = I.getOperand(0);
+
+        // This is a cast, take the same value as the value that is being cast.
+        if (this->map.contains(op)) {
+            this->map.put(&I, PointerStatus::createAlias(this->map.get(op)));
+        }
+
+        return OK;
+    }
+
+    ErrorCode visitMemCpyInst(MemCpyInst &I) {
+        Value *source = I.getSource();
+        Value *dest = I.getDest();
+        if (this->map.contains(source) && this->map.get(source)->derefIsError())
+            return NULL_DEREF;
+        if (this->map.contains(dest) && this->map.get(dest)->derefIsError())
+            return NULL_DEREF;
+        return OK;
+    }
+
+    ErrorCode visitIntToPtrInst(IntToPtrInst &I) {
+        // http://llvm.org/docs/LangRef.html#inttoptr-to-instruction
+        this->map.put(&I, PointerStatus::createPure(DONT_KNOW));
         return OK;
     }
 
