@@ -4,14 +4,17 @@
 #include <unordered_map>
 #include <stack>
 #include <sstream>
+#include <iomanip>
 #include <llvm/IR/Value.h>
 #include <llvm/ADT/Hashing.h>
+
+#include "ErrorCode.h"
 
 using namespace llvm;
 
 enum PointerKeyType {
     LLVM_VALUE,
-    STRUCT_FIELD
+    OFFSET
 };
 
 /**
@@ -20,70 +23,67 @@ enum PointerKeyType {
  * There are two types of PointerKey:
  *  (1) LLVM_VALUE:
  *      The value that is represented by the key is a plain LLVM Value.
- *  (2) STRUCT_FIELD:
- *      The value that is represented is a field of a struct. This field is
- *      internally represented by the LLVM Value that points to the struct and
- *      the number of the field.
+ *  (2) OFFSET:
+ *      The value that is represented is a field of a struct or an array value
+ *      at some index. This is represented by the LLVM Value that stores the
+ *      struct/array and the number of the field/offset.
  */
 class PointerKey {
     PointerKeyType type;
     Value *value;
-    int fieldno;
+    size_t offset;
 
-    PointerKey(PointerKeyType type, Value *value, int fieldno)
-        : type(type), value(value), fieldno(fieldno) {}
+    PointerKey(PointerKeyType type, Value *value, int offset)
+        : type(type), value(value), offset(offset) {}
 
 public:
     static PointerKey createLlvmKey(Value *value) {
         return PointerKey(LLVM_VALUE, value, 0);
     }
 
-    static PointerKey createStructFieldKey(Value *value, int fieldno) {
-        return PointerKey(STRUCT_FIELD, value, fieldno);
+    static PointerKey createOffsetKey(Value *value, int offset) {
+        return PointerKey(OFFSET, value, offset);
     }
 
     bool operator ==(const PointerKey other) const {
         return this->type == other.type
                 && this->value == other.value
-                && this->fieldno == other.fieldno;
+                && this->offset == other.offset;
     }
 
     size_t hash() const noexcept {
         size_t h = 13;
         h = 23*h + this->type;
-        h = 23*h + this->fieldno;
+        h = 23*h + this->offset;
         h = 23*h + hash_value(this->value);
         return h;
     }
 
     Value *getLlvmValue() const { return this->value; }
 
-    std::string prettyPrint() {
+    std::string prettyString() const {
         std::string s;
         std::string type_str;
         llvm::raw_string_ostream rso(type_str);
         switch (type) {
         case LLVM_VALUE:
-            s.append("LLVM_VALUE: ");
-            s.append("VALUE=");
+            s.append("LLVM:");
             this->value->print(rso);
             s.append(rso.str());
             s.append("; ");
             break;
-        case STRUCT_FIELD:
-            s.append("STRUCT_FIELD: ");
-            s.append("VALUE=");
+        case OFFSET:
+            s.append("OFFSET(");
+            s.append(std::to_string(offset));
+            s.append(") ");
             this->value->print(rso);
             s.append(rso.str());
-            s.append("; ");
-            s.append("FIELDNO=");
-            s.append(std::to_string(fieldno));
+            s.append(";");
             break;
         default:
             s.append("JEEZ ERROR (pretty print PointerKey)");
             break;
         }
-        s.append("\n");
         return s;
     }
 };
@@ -97,7 +97,8 @@ namespace std {
 enum PointerStatusValue {
     NIL = 1,
     NON_NIL = 2,
-    DONT_KNOW = NIL | NON_NIL
+    DONT_KNOW = NIL | NON_NIL,
+    UNDEFINED = 8
 };
 
 enum PointerStatusType {
@@ -111,17 +112,21 @@ enum PointerStatusType {
  * PointerStatus information is always associated with a PointerKey. The
  * PointerKey represents some value in the program that is analyzed.
  *
- *         {NIL, NON_NIL}
- *           //     \\
- *       {NIL}     {NON_NIL}
- *           \\     //
- *              {} --> don't care about this
- *                     we're not a 'use-before-initialized detection pass'
+ *         {NIL, NON_NIL}           +--> This is associated with keys that result
+ *           //     \\              |    from null dereferences
+ *                                  |
+ *       {NIL}     {NON_NIL}     {UNDEFINED}
+ *           \\       \\            //
+ *
+ *                     {} --> don't care about this
+ *                            we're not a 'use-before-initialized detection pass'
  *
  * There are three types of PointerStatus:
  *  (1) PURE:
  *      This is the 'leaf' type. The key that is associated with
  *      this status either has a NIL, NON_NIL or NIL+NON_NIL status.
+ *      Values that result from a null dereference are tagged with the
+ *      UNDEFINED status.
  *  (2) ALIAS:
  *      The key that is associated with this status is an alias of some other
  *      key in the map. To look up the actual status value, we have to look at
@@ -159,8 +164,7 @@ public:
         switch (type) {
         case ALIAS: return parent->getStatus();
         case PURE: // fall through
-        case REFERENCE: // fall through
-        default: return statusValue;
+        case REFERENCE: return statusValue;
         }
     }
 
@@ -176,8 +180,7 @@ public:
             this->statusValue = status;
             this->parent = NULL;
             break;
-        case PURE: // fall through
-        default:
+        case PURE:
             this->statusValue = status;
             break;
         }
@@ -185,15 +188,16 @@ public:
 
     int depth() const {
         switch (type) {
-        case ALIAS: return this->parent->depth();
-        case REFERENCE: return 1 + this->parent->depth();
+        case ALIAS: return parent->depth();
+        case REFERENCE: return 1 + (parent==NULL ? 0 : parent->depth());
         case PURE: return 0;
         }
     }
 
-    /// If we dereference this, do we get a null dereference?
-    bool isNullDeref() const {
-        return this->statusValue == NIL && this->depth() == 0;
+    /// Returns true if dereferencing this causes an error, false otherwise.
+    bool derefIsError() const {
+        PointerStatusValue st = getStatus();
+        return (st == NIL || st == UNDEFINED) && depth() == 0;
     }
 
     bool hasParent() { return this->getParent() != NULL; }
@@ -215,37 +219,36 @@ public:
         }
     }
 
-    std::string prettyPrint() {
+    std::string prettyString() const {
         std::stringstream ss;
         switch (type) {
         case PURE:
-            ss << "PURE: ID=";
-            ss << ((size_t)this&0xffff);
-            ss << "; STATUS=";
+            ss << '<' << std::hex << ((size_t)this&0xffff) << '>';
+            ss << " PURE/";
             switch (statusValue) {
             case NIL: ss << "NIL; "; break;
             case NON_NIL: ss << "NON_NIL; "; break;
             case DONT_KNOW: ss << "DONT_KNOW; "; break;
+            case UNDEFINED: ss << "UNDEFINED"; break;
             default: ss << "???"; break;
             }
             break;
         case ALIAS:
-            ss << "ALIAS: ID=";
-            ss << (((size_t) this)&0xffff);
-            ss << "; REFERENCE=";
-            ss << (((size_t)this->parent)&0xffff);
+            ss << '<' << std::hex << ((size_t)this&0xffff) << '>';
+            ss << " ALIAS OF ";
+            ss << '<' << std::hex << ((size_t)this->parent&0xffff) << '>';
+            ss << " at depth " << depth();
             break;
         case REFERENCE:
-            ss << "REFERENCE: ID=";
-            ss << (((size_t) this)&0xffff);
-            ss << "; PARENT=";
-            ss << (((size_t)this->parent)&0xffff);
+            ss << '<' << std::hex << ((size_t)this&0xffff) << '>';
+            ss << " REFERENCE OF ";
+            ss << '<' << std::hex << ((size_t)this->parent&0xffff) << '>';
+            ss << " at depth " << depth();
             break;
         default:
             ss << "JEEZ ERROR (pretty print PointerStatus)";
             break;
         }
-        ss << "\n";
         return ss.str();
     }
 
@@ -288,17 +291,22 @@ public:
     PointerStatus* put(Value *value, const PointerStatus &status) { return this->put(PointerKey::createLlvmKey(value), status); }
 
     void dump() {
+        std::stringbuf buf;
+        std::ostream os(&buf);
+
         for (std::pair<PointerKey, PointerStatus*> p : this->map) {
-            errs() << "key:   ";
-            errs() << p.first.prettyPrint();
-            errs() << "value: ";
+            os << " - ";
+            os << std::left << std::setw(60) << p.first.prettyString();
+            os << " => ";
             if (p.second == NULL) {
-                errs() << "NULL\n";
+                os << "NULL\n";
             } else {
-                errs() << p.second->prettyPrint();
+                os << p.second->prettyString();
             }
-            errs()  << "\n";
+            os << "\n";
         }
+
+        errs() << buf.str();
     }
 };
 

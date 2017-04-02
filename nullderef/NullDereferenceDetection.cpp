@@ -8,8 +8,8 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
+#include "ErrorCode.h"
 #include "PointerTrackerVisitor.h"
-#include "TestSuite.h"
 
 using namespace llvm;
 
@@ -25,37 +25,40 @@ using namespace llvm;
 
 namespace {
 
+static void printResult(ErrorCode code, Instruction& inst, size_t instNumber) {
+    if (code != OK) {
+        errs() << "RESULT[" << instNumber << "]:" << errorCodeName(code);
+        inst.print(errs());
+        errs() << "\n";
+    }
+}
+
 struct NullDereferenceDetection : public FunctionPass {
     static char ID;
     NullDereferenceDetection() : FunctionPass(ID) {}
 
     bool runOnFunction(Function &function) override {
+        size_t instNumber = 0;
         PointerTrackerVisitor tracker;
 
-        errs() << ">> Function " << function.getName() << " <<\n";
+        errs() << "\n";
 
-        unsigned int instructionIndex = 1;
         try {
             // iterate over all instructions in a function (skip the basic blocks, see [1])
-            bool continueLoop = true;
-            for (inst_iterator iptr = inst_begin(function), i_end = inst_end(function); iptr != i_end; ++iptr) {
+            for (inst_iterator iptr=inst_begin(function), i_end = inst_end(function); iptr != i_end; ++iptr) {
 
                 // get the reference of an instruction from an iterator (see [2])
                 Instruction& inst = *iptr;
 
-                switch (tracker.visit(inst)) {
-                case OK: break;
-                case NULL_DEREF: TestSuite::printResult(NULL_DEREF, inst, instructionIndex); break;
-                case MAYBE_NULL_DEREF: TestSuite::printResult(MAYBE_NULL_DEREF, inst, instructionIndex); break;
-                case MISSED_DEFINITION: TestSuite::printResult(MISSED_DEFINITION, inst, instructionIndex); continueLoop = false; break;
-                case UNKNOWN_ERROR: TestSuite::printResult(UNKNOWN_ERROR, instructionIndex); continueLoop = false; break;
-                }
-                if(!continueLoop) { break; }
+                ErrorCode result = tracker.visit(inst);
+                printResult(result, inst, ++instNumber);
 
-                ++instructionIndex;
+                if ((result & ERROR) == ERROR) {
+                    break;
+                }
             }
 
-            errs() << "\n\n[DUMP OF INTERNAL DATA STRUCTURE]\n";
+            errs() << "\n[DUMP OF INTERNAL DATA STRUCTURE]\n";
             tracker.dump();
 
         } catch (const char* msg) {

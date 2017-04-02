@@ -14,27 +14,32 @@
 load 'test/bats-support/load'
 load 'test/bats-assert/load'
 
-RESULT_OUTPUT="RESULT:"
+RESULT_OUTPUT="RESULT"
 
 OK="OK"
 NULL_DEREF="NULL_DEREF"
+UNDEF_DEREF="UNDEFINED_DEREF"
 MAYBE_NULL_DEREF="MAYBE_NULL_DEREF"
 UNKNOWN_ERROR="UNKNOWN_ERROR"
 
 function buildEventForInstruction() {
-  echo $RESULT_OUTPUT$1";INDEX:"$2";INSTRUCTION:  "$3
+    echo "$RESULT_OUTPUT[$2]:$1  $3"
 }
 
 function buildDereferenceRegexForInstruction() {
-  buildEventForInstruction $NULL_DEREF $1 $2
+    buildEventForInstruction $1 $2 $3
 }
 
 function assert_events_count() {
-	assert_equal $(echo $output | grep -o $RESULT_OUTPUT | wc -l | tr -d " ") $1
+    assert_equal $(echo $output | grep -o $RESULT_OUTPUT | wc -l | tr -d " ") $1
 }
 
-function assert_dereference_at_instruction() {
-  	assert_line $(buildDereferenceRegexForInstruction $1 $2)
+function assert_nullderef_at_instruction() {
+    assert_line $(buildDereferenceRegexForInstruction $NULL_DEREF $1 $2)
+}
+
+function assert_undefderef_at_instruction() {
+    assert_line $(buildDereferenceRegexForInstruction $UNDEF_DEREF $1 $2)
 }
 
 # setup() {}
@@ -45,7 +50,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 5 "%4 = load i32, i32* %3, align 4"
+  assert_nullderef_at_instruction 5 "%4 = load i32, i32* %3, align 4"
 }
 
 @test "basic/example1" {
@@ -54,7 +59,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 5 "%4 = load i32*, i32** %3, align 8"
+  assert_nullderef_at_instruction 5 "%4 = load i32*, i32** %3, align 8"
 }
 
 @test "basic/example2" {
@@ -71,8 +76,8 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 2
-  assert_dereference_at_instruction 9 "%7 = load i32, i32* %6, align 4"
-  assert_dereference_at_instruction 12 "%9 = load i32, i32* %8, align 4"
+  assert_nullderef_at_instruction 9 "%7 = load i32, i32* %6, align 4"
+  assert_nullderef_at_instruction 12 "%9 = load i32, i32* %8, align 4"
 }
 
 @test "basic/example4" {
@@ -89,7 +94,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 14 "%10 = load i32, i32* %9, align 4"
+  assert_nullderef_at_instruction 14 "%10 = load i32, i32* %9, align 4"
 }
 
 @test "basic/example6" {
@@ -98,7 +103,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 12 "%8 = load i32, i32* %7, align 4"
+  assert_nullderef_at_instruction 12 "%8 = load i32, i32* %7, align 4"
 }
 
 @test "basic/example7" {
@@ -123,7 +128,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 4 "store i32 5, i32* %2, align 4"
+  assert_nullderef_at_instruction 4 "store i32 5, i32* %2, align 4"
 }
 
 @test "basic/example10" {
@@ -132,7 +137,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 4 "%5 = load i32, i32* %4, align 4"
+  assert_nullderef_at_instruction 6 "%5 = load i32, i32* %4, align 4"
 }
 
 @test "basic/example11" {
@@ -141,7 +146,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 5 "store i32 5, i32* %3, align 4"
+  assert_nullderef_at_instruction 5 "store i32 5, i32* %3, align 4"
 }
 
 @test "basic/example12" {
@@ -149,9 +154,13 @@ function assert_dereference_at_instruction() {
   assert_failure
 
   run ./opt $BATS_TEST_DESCRIPTION
-  assert_events_count 2
-  assert_dereference_at_instruction 19 "%13 = load i32**, i32*** %12, align 8"
-  assert_dereference_at_instruction 24 "%17 = load i32***, i32**** %16, align 8"
+  assert_events_count 6
+  assert_nullderef_at_instruction  19 "%13 = load i32**, i32*** %12, align 8"
+  assert_undefderef_at_instruction 20 "%14 = load i32*, i32** %13, align 8"
+  assert_undefderef_at_instruction 21 "%15 = load i32, i32* %14, align 4"
+  assert_nullderef_at_instruction  25 "%18 = load i32**, i32*** %17, align 8"
+  assert_undefderef_at_instruction 26 "%19 = load i32*, i32** %18, align 8"
+  assert_undefderef_at_instruction 27 "%20 = load i32, i32* %19, align 4"
 }
 
 @test "struct/example0" {
@@ -160,7 +169,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 6 "%5 = load i32, i32* %4, align 4"
+  assert_nullderef_at_instruction 6 "%5 = load i32, i32* %4, align 4"
 }
 
 @test "struct/example1" {
@@ -169,7 +178,7 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 5 "store i32 77, i32* %3, align 4"
+  assert_nullderef_at_instruction 5 "store i32 77, i32* %3, align 4"
 }
 
 @test "struct/example2" {
@@ -178,6 +187,6 @@ function assert_dereference_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_dereference_at_instruction 7 "call void @llvm.memcpy.p0i8.p0i8.i64(i8* %4, i8* %5, i64 4, i32 4, i1 false)"
+  assert_nullderef_at_instruction 7 "call void @llvm.memcpy.p0i8.p0i8.i64(i8* %4, i8* %5, i64 4, i32 4, i1 false)"
 }
 
