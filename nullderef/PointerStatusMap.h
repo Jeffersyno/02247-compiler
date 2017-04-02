@@ -252,7 +252,9 @@ public:
 
     PointerStatus* put(PointerKey key, const PointerStatus &status) {
         PointerStatus *heapStatus = new PointerStatus(status);
+        PointerStatus *oldValue = this->map[key];
         this->map[key] = heapStatus;
+        delete oldValue;
         return heapStatus;
     }
     PointerStatus* put(Value *value, const PointerStatus &status) { return this->put(PointerKey::createLlvmKey(value), status); }
