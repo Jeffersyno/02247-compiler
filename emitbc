@@ -7,16 +7,12 @@
 # Load CLANG and OPT
 source settings
 
-CLANG_OPTS=
-
 FOLDER=examples
 BCFOLDER=build/examples
 FILE=hello
-OUTPUT="-o __OUTPUT__"
 
 if [[ $# -gt 0 && "$1" = "--human" ]]; then
-    OUTPUT="-o - "
-    CLANG_OPTS="-S"
+    HUMAN=1
     shift
 fi
 
@@ -26,10 +22,24 @@ fi
 
 CFILE="$FOLDER/$FILE.c"
 OFILE="$BCFOLDER/$FILE.bc"
-OUTPUT=${OUTPUT//__OUTPUT__/$OFILE}
 
 # Print human-readable LLVM byte code to stdout
-CMD="$CLANG -emit-llvm $CLANG_OPTS -c $OUTPUT $CFILE"
+if [[ $HUMAN -eq 1 ]]; then
+    if command -v highlight >/dev/null 2>&1; then
+        CODE=$(highlight --stdout --out-format=truecolor $CFILE)
+    else
+        CODE=$(cat $CFILE)
+    fi
+    echo "-- BEGIN $CFILE ---------------------------"
+    echo "$CODE"
+    echo "-- END $CFILE -----------------------------"
+    echo
+    CMD="$CLANG -emit-llvm -S -c -o - $CFILE"
+else # output binary bc to file
+    mkdir -p $(dirname "$OFILE")
+    CMD="$CLANG -emit-llvm -c -o $OFILE $CFILE"
+fi
 
 echo $CMD
+echo
 eval $CMD
