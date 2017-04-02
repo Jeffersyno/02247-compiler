@@ -5,7 +5,7 @@
 #ifndef TESTSUITE_H
 #define TESTSUITE_H
 
-#include "llvm/Support/raw_ostream.h"
+#include <llvm/Support/raw_ostream.h>
 
 #include "PointerTrackerVisitor.h"
 
