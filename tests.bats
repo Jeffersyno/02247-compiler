@@ -169,8 +169,7 @@ function assert_undefderef_at_instruction() {
   assert_failure
 
   run ./opt $BATS_TEST_DESCRIPTION
-  assert_events_count 1
-  assert_nullderef_at_instruction  9 "%7 = load i64, i64* %6, align 8"
+  assert_events_count 0
 }
 
 @test "struct/example0" {
