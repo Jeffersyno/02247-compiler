@@ -1,3 +1,7 @@
+/*
+Access to the value pointed by a null dereferenced pointer that is declared inside of a struct
+*/
+
 struct A { int v; int* ptr; };
 
 int main() {

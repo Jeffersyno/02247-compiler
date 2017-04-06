@@ -1,5 +1,5 @@
 /*
-Get the struct linked with a dereferenced pointer
+Get the struct linked with a null dereferenced pointer
 */
 
 struct A {

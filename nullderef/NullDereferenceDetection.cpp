@@ -25,27 +25,6 @@ using namespace llvm;
 
 namespace {
 
-static void printResult(ErrorCode code, Instruction& inst, size_t instNumber) {
-    if (code != OK) {
-        errs() << "RESULT[" << instNumber << "]:" << errorCodeName(code);
-        inst.print(errs());
-        errs() << "\n";
-    }
-}
-
-static void printError(const char* msg) {
-    errs().changeColor(raw_ostream::RED);
-    errs() << "ERROR: " << msg << "\n";
-    errs().resetColor();
-}
-
-static void printError(const char* msg, llvm::Instruction &I) {
-    printError(msg);
-    errs() << "    while dealing with ";
-    I.print(errs());
-    errs() << '\n';
-}
-
 struct NullDereferenceDetection : public FunctionPass {
     static char ID;
     NullDereferenceDetection() : FunctionPass(ID) {}

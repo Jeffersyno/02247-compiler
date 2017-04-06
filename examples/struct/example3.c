@@ -1,5 +1,5 @@
 /*
-Dereference of an integer pointer inside a struct
+Access to the value pointed by a null dereference integer pointer declared inside a struct
 */
 
 struct A { 

@@ -3,6 +3,8 @@
 
 #include <string>
 
+using namespace llvm;
+
 enum ErrorCode {
     /** All is well. */
     OK = 0,
@@ -33,6 +35,27 @@ std::string errorCodeName(ErrorCode code) {
     case MISSED_DEFINITION: return "MISSED_DEFINITION";
     default:                return "???";
     }
+}
+
+void printResult(ErrorCode code, Instruction& inst, size_t instNumber) {
+    if (code != OK) {
+        errs() << "RESULT[" << instNumber << "]:" << errorCodeName(code);
+        inst.print(errs());
+        errs() << "\n";
+    }
+}
+
+void printError(const char* msg) {
+    errs().changeColor(raw_ostream::RED);
+    errs() << "ERROR: " << msg << "\n";
+    errs().resetColor();
+}
+
+void printError(const char* msg, llvm::Instruction &I) {
+    printError(msg);
+    errs() << "    while dealing with ";
+    I.print(errs());
+    errs() << '\n';
 }
 
 #endif // ERROR_CODE_H

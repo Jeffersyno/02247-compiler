@@ -14,16 +14,17 @@
 load 'test/bats-support/load'
 load 'test/bats-assert/load'
 
-RESULT_OUTPUT="RESULT"
+RESULT="RESULT"
 
 OK="OK"
+DEREF="DEREF"
 NULL_DEREF="NULL_DEREF"
-UNDEF_DEREF="UNDEFINED_DEREF"
-MAYBE_NULL_DEREF="MAYBE_NULL_DEREF"
-UNKNOWN_ERROR="UNKNOWN_ERROR"
+UNDEFINED_DEREF="UNDEFINED_DEREF"
+ERROR="UNKNOWN_ERROR"
+MISSED_DEFINITION="MISSED_DEFINITION"
 
 function buildEventForInstruction() {
-    echo "$RESULT_OUTPUT[$2]:$1  $3"
+    echo "$RESULT[$2]:$1  $3"
 }
 
 function buildDereferenceRegexForInstruction() {
@@ -31,7 +32,7 @@ function buildDereferenceRegexForInstruction() {
 }
 
 function assert_events_count() {
-    assert_equal $(echo $output | grep -o $RESULT_OUTPUT | wc -l | tr -d " ") $1
+    assert_equal $(echo $output | grep -o $RESULT | wc -l | tr -d " ") $1
 }
 
 function assert_nullderef_at_instruction() {
@@ -39,7 +40,7 @@ function assert_nullderef_at_instruction() {
 }
 
 function assert_undefderef_at_instruction() {
-    assert_line $(buildDereferenceRegexForInstruction $UNDEF_DEREF $1 $2)
+    assert_line $(buildDereferenceRegexForInstruction $UNDEFINED_DEREF $1 $2)
 }
 
 # setup() {}
@@ -163,6 +164,15 @@ function assert_undefderef_at_instruction() {
   assert_undefderef_at_instruction 27 "%20 = load i32, i32* %19, align 4"
 }
 
+@test "basic/example13" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction  9 "%7 = load i64, i64* %6, align 8"
+}
+
 @test "struct/example0" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
@@ -189,4 +199,32 @@ function assert_undefderef_at_instruction() {
   assert_events_count 1
   assert_nullderef_at_instruction 7 "call void @llvm.memcpy.p0i8.p0i8.i64(i8* %4, i8* %5, i64 4, i32 4, i1 false)"
 }
+
+@test "struct/example3" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction 7 "%6 = load i32, i32* %5, align 4"
+}
+
+@test "struct/example4" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction 11 "%9 = load i32, i32* %8, align 4"
+}
+
+@test "struct/example5" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction 22 "%17 = load i32, i32* %16, align 4"
+}
+
 
