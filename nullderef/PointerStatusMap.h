@@ -166,6 +166,8 @@ public:
         case PURE: // fall through
         case REFERENCE: return statusValue;
         }
+
+        throw "unreachable";
     }
 
     void setStatus(PointerStatusValue status) {
@@ -192,6 +194,8 @@ public:
         case REFERENCE: return 1 + (parent==NULL ? 0 : parent->depth());
         case PURE: return 0;
         }
+
+        throw "unreachable";
     }
 
     /// Returns true if dereferencing this causes an error, false otherwise.
@@ -209,6 +213,8 @@ public:
         case REFERENCE: return parent;
         case PURE: return NULL;
         }
+
+        throw "unreachable";
     }
 
     void setParent(PointerStatus *parent) {
@@ -259,6 +265,10 @@ struct PointerStatusMapFrameItem {
     PointerStatus *oldStatus;
     PointerStatus *newStatus;
 
+    static PointerStatusMapFrameItem delimiter()
+        { return PointerStatusMapFrameItem(PointerKey::createLlvmKey(NULL) /*nonsense*/, NULL, NULL); }
+    PointerStatusMapFrameItem(PointerKey key, PointerStatus *old, PointerStatus *nw)
+        : key(key), oldStatus(old), newStatus(nw) {}
     bool isDelimiter() { return oldStatus==NULL && newStatus==NULL; }
 };
 
@@ -267,28 +277,41 @@ class PointerStatusMap {
     std::stack<PointerStatusMapFrameItem> stack;
 
 public:
-    // We pass keys as value, make sure the type doesn't grown too large
-    // If the key is not presented, it will create a new object and key and return a pointer to the object
-    PointerStatus* get(PointerKey key) { return this->map[key]; }
-    PointerStatus* get(Value *value) { return get(PointerKey::createLlvmKey(value)); }
-
+    PointerStatusMap() { pushFrame(); }
     ~PointerStatusMap() {
         for (std::pair<PointerKey, PointerStatus*> p : this->map) {
             delete p.second;
         }
     }
 
+    // We pass keys as value, make sure the type doesn't grown too large
+    // If the key is not presented, it will create a new object and key and return a pointer to the object
+    PointerStatus *get(PointerKey key) { return this->map[key]; }
+    PointerStatus *get(Value *value) { return get(PointerKey::createLlvmKey(value)); }
+
     bool contains(PointerKey key) { return this->map.count(key); }
     bool contains(Value *value) { return this->contains(PointerKey::createLlvmKey(value)); }
 
-    PointerStatus* put(PointerKey key, const PointerStatus &status) {
+    PointerStatus *put(PointerKey key, const PointerStatus &status) {
         PointerStatus *heapStatus = new PointerStatus(status);
         PointerStatus *oldValue = this->map[key];
         this->map[key] = heapStatus;
         delete oldValue;
         return heapStatus;
     }
-    PointerStatus* put(Value *value, const PointerStatus &status) { return this->put(PointerKey::createLlvmKey(value), status); }
+    PointerStatus *put(Value *value, const PointerStatus &status) { return this->put(PointerKey::createLlvmKey(value), status); }
+
+    // START CONDITIONAL FRAMES API
+    void pushFrame() { stack.push(PointerStatusMapFrameItem::delimiter()); }
+    //void popFrame() {
+    //    if (!stack.empty()) {
+    //        PointerStatusMapFrameItem item;
+    //        do { item = stack.pop(); }
+    //        while  (!item.isDelimiter());
+    //    }
+    //}
+    void mergeFrame() {}
+    // END CONDITONAL FRAMES API
 
     void dump() {
         std::stringbuf buf;
@@ -305,6 +328,14 @@ public:
             }
             os << "\n";
         }
+
+        //os << "\nCONDITIONAL STACK\n";
+        //for (PointerStatusMapFrameItem i : this->stack) {
+        //    if (i.isDelimiter())
+        //        os << "delimiter";
+        //    else
+        //        os << "item";
+        //}
 
         errs() << buf.str();
     }

@@ -9,4 +9,5 @@ int main() {
     struct A *p = &a;
     p->ptr = 0;
     int i = *(p->ptr);
+    int j = *(a.ptr);
 }

@@ -16,7 +16,7 @@ using namespace llvm;
 /*
  * An LLVM pass that statically detects null dereferences.
  *
- * [1] http://llvm.org/docs/ProgrammersManual.html#iterating-over-the-instruction-in-a-function
+ * [1] http://llvm.org/docs/ProgrammersManual.html#iterating-over-the-basicblock-in-a-function
  * [2] http://llvm.org/docs/ProgrammersManual.html#turning-an-iterator-into-a-class-pointer-and-vice-versa
  * [3] http://llvm.org/docs/ProgrammersManual.html#the-isa-cast-and-dyn-cast-templates
  * [4] http://llvm.org/docs/WritingAnLLVMPass.html#the-doinitialization-module-method
@@ -35,19 +35,14 @@ struct NullDereferenceDetection : public FunctionPass {
 
         errs() << "\n";
 
-        // iterate over all instructions in a function (skip the basic blocks, see [1])
-        for (inst_iterator iptr=inst_begin(function), i_end = inst_end(function); iptr != i_end; ++iptr) {
+        for (BasicBlock &BB : function) { // [1]
+            for (Instruction &I : BB) { // [1], little lower
+                ErrorCode result;
+                try { result = tracker.visit(I); }
+                catch (const char *msg) { printError(msg, I); }
 
-            // get the reference of an instruction from an iterator (see [2])
-            Instruction& inst = *iptr;
-
-            ErrorCode result;
-            try { result = tracker.visit(inst); }
-            catch(const char *msg) { printError(msg, inst); }
-
-            printResult(result, inst, ++instNumber);
-            if ((result & ERROR) == ERROR) {
-                break;
+                printResult(result, I, ++instNumber);
+                if ((result & ERROR) == ERROR) break;
             }
         }
 
