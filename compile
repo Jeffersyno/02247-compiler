@@ -34,7 +34,7 @@ mkdir -p $(dirname "$BCFILE")
 CLANG="$CLANG -Xclang -load \
       -Xclang build/nullderef/libNullDereferenceDetection.* \
       -o $OFILE \
-      $CFILE"
+      $CFILE -g"
 
 echo $CLANG
 exec $CLANG

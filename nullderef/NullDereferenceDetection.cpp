@@ -39,9 +39,9 @@ struct NullDereferenceDetection : public FunctionPass {
             for (Instruction &I : BB) { // [1], little lower
                 ErrorCode result;
                 try { result = tracker.visit(I); }
-                catch (const char *msg) { printError(msg, I); }
+                catch (const char *msg) { printError(msg, &I); }
 
-                printResult(result, I, ++instNumber);
+                printResult(result, &I, ++instNumber);
                 if ((result & ERROR) == ERROR) break;
             }
         }
