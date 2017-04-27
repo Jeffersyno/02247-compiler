@@ -226,4 +226,26 @@ function assert_undefderef_at_instruction() {
   assert_nullderef_at_instruction 22 "%17 = load i32, i32* %16, align 4"
 }
 
+@test "flow/example1" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_success
+}
+
+@test "flow/example2" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction 5 "%4 = load i32, i32* %3, align 4"
+}
+
+@test "flow/example3" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction 5 "%9 = load i32, i32* %8, align 4" // Not sure about line number
+}
 

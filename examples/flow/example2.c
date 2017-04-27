@@ -1,7 +1,12 @@
-int* get_ptr();
+/*
+An if conditional flow that always results in a pointer dereference
+*/
+
+#include <stdbool.h>
 
 int main() {
-    int *ptr = 0;
-    while (!(ptr = get_ptr())) {}
-    *ptr;
+    int* ptr = 0;
+    if (true) {
+        int value = *ptr;
+    }
 }

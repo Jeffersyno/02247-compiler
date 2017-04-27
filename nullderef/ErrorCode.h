@@ -2,6 +2,7 @@
 #define ERROR_CODE_H 1
 
 #include <string>
+#include "llvm/IR/DebugInfo.h"
 
 using namespace llvm;
 
@@ -37,10 +38,16 @@ std::string errorCodeName(ErrorCode code) {
     }
 }
 
-void printResult(ErrorCode code, Instruction& inst, size_t instNumber) {
+void printResult(ErrorCode code, Instruction* inst, size_t instNumber) {
+    // testing debug info
+    if (DILocation *Loc = inst->getDebugLoc()) {
+        errs() << Loc->getLine();
+        errs() << '\n';
+    }
+
     if (code != OK) {
         errs() << "RESULT[" << instNumber << "]:" << errorCodeName(code);
-        inst.print(errs());
+        inst->print(errs());
         errs() << "\n";
     }
 }
@@ -51,10 +58,10 @@ void printError(const char* msg) {
     errs().resetColor();
 }
 
-void printError(const char* msg, llvm::Instruction &I) {
+void printError(const char* msg, Instruction *I) {
     printError(msg);
     errs() << "    while dealing with ";
-    I.print(errs());
+    I->print(errs());
     errs() << '\n';
 }
 
