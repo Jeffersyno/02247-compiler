@@ -89,7 +89,7 @@ public:
         // http://llvm.org/docs/GetElementPtr.html#what-is-dereferenced-by-gep
 
         Value *op1 = I.getPointerOperand();
-        ConstantInt *op2 = dyn_cast<ConstantInt>(I.getOperand(1));
+        ConstantInt *op2 = dyn_cast<ConstantInt>(I.getOperand(2));
 
         if (!this->map.contains(op1)) { return MISSED_DEFINITION; }
 
