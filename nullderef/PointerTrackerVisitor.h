@@ -133,7 +133,7 @@ public:
 
         Value *op = I.getPointerOperand();
         int64_t offset = -1;
-        for (Use *u = I.op_begin()+1; u < I.op_end(); ++u) { // hack
+        for (Use *u = I.op_begin()+1; u < I.op_end(); ++u) { // hack to find a reasonable offset
             ConstantInt *c = dyn_cast<ConstantInt>(u->get());
             if (c != NULL && offset == -1) offset = 0;
             if (c != NULL) offset += c->getSExtValue();
@@ -148,6 +148,11 @@ public:
                     : PointerStatus::createPure(DONT_KNOW);
             map.put(key, status);
             map.putAlias(&I, key);
+
+            if (status.getStatusValue() == DONT_KNOW) {
+                errs() << "STORED DONT_KNOW " << status.prettyString() << "\n";
+                I.dump();
+            }
         }
 
         return OK;
@@ -190,17 +195,15 @@ private:
         PointerStatusValue st = status->getStatus();
         switch (st) {
 
-        // NULL is being dereferenced
-        case NIL: return NULL_DEREF;
-
-        // An UNDEFINED value (the result of a NULL dereference) is being dereferenced.
-        case UNDEFINED: return UNDEFINED_DEREF;
+        case NIL: return NULL_DEREF; // NULL is being dereferenced
+        case UNDEFINED: return UNDEFINED_DEREF; // The result of a NULL deref is being dereferenced
 
         default: return OK;
         }
     }
 
     ErrorCode handleDerefError(llvm::Instruction &I, PointerStatus *status) {
+        // Map this PURE/UNDEFINED instruction/llvm register to UNDEFINED
         this->map.put(&I, PointerStatus::createPure(UNDEFINED));
         return handleDerefError(status);
     }

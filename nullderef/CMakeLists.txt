@@ -1,8 +1,6 @@
 add_library(NullDereferenceDetection MODULE
     # List your source files here.
-    NullDereferenceDetection.cpp
-    #PointerStatusMap.h
-        Debug.h)
+    NullDereferenceDetection.cpp)
 
 # Use C++11 to compile our pass (i.e., supply -std=c++11).
 target_compile_features(NullDereferenceDetection PRIVATE cxx_range_for cxx_auto_type)

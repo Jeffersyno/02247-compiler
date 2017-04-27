@@ -11,6 +11,8 @@
 #include "ErrorCode.h"
 #include "PointerTrackerVisitor.h"
 
+#include "Visitor.h"
+
 using namespace llvm;
 
 /*
@@ -31,24 +33,35 @@ struct NullDereferenceDetection : public FunctionPass {
 
     bool runOnFunction(Function &function) override {
         size_t instNumber = 0;
-        PointerTrackerVisitor tracker;
+        Visitor visitor;
 
         errs() << "\n";
 
         for (BasicBlock &BB : function) { // [1]
             for (Instruction &I : BB) { // [1], little lower
                 ErrorCode result;
-                try { result = tracker.visit(I); }
+                try { result = visitor.visit(I); }
                 catch (const char *msg) { printError(msg, &I); throw msg; /*for stack trace*/ }
 
                 printResult(result, &I, ++instNumber);
                 if ((result & ERROR) == ERROR) break;
+
+                // Dump tracker for every change.
+                //errs().changeColor(raw_ostream::BLUE);
+                //errs().reverseColor();
+                //errs() << ">>> INSTRUCTION " << instNumber << " ";
+                //I.dump();
+                //errs().resetColor();
+                //errs() << "\n";
+                //tracker.dump();
+                //errs() << "---------------------------------------------------------------------------------------------------------\n\n";
             }
         }
 
         try {
-            errs() << "\n[DUMP OF INTERNAL DATA STRUCTURE]\n";
-            tracker.dump();
+            errs().changeColor(llvm::raw_ostream::YELLOW);
+            errs() << visitor.dump();
+            errs().resetColor();
         } catch (const char *msg) { printError(msg); }
 
         // return true if the function was modified, false otherwise [4]

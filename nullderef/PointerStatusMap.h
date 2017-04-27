@@ -1,6 +1,7 @@
 #ifndef POINTER_STATUS_MAP_H
 #define POINTER_STATUS_MAP_H
 
+#include <string>
 #include <vector>
 #include <unordered_map>
 #include <stack>
@@ -74,9 +75,9 @@ public:
             s.append("; ");
             break;
         case OFFSET:
-            s.append("OFFSET(");
+            s.append("OFF");
             s.append(std::to_string(offset));
-            s.append("): ");
+            s.append(":");
             this->value->print(rso);
             s.append(rso.str());
             s.append(";");
@@ -127,7 +128,7 @@ enum PointerStatusType {
  *      this status either has a NIL, NON_NIL or NIL+NON_NIL status.
  *      Values that result from a null dereference are tagged with the
  *      UNDEFINED status.
- *  (3) REFERENCE:
+ *  (2) REFERENCE:
  *      We know that the key that is associated with this status is a pointer to
  *      another key that is also tracked (i.e. it is a NON_NIL pointer to some
  *      other value that is also in our map).
@@ -209,11 +210,14 @@ public:
         }
     }
 
+    PointerStatusType getType() const { return type; }
+    PointerStatusValue getStatusValue() const { return statusValue; }
+
     std::string prettyString() const {
         std::stringstream ss;
         switch (type) {
         case PURE:
-            ss << '<' << std::hex << ((size_t)this&0xffff) << '>';
+            ss << '<' << std::hex << std::setw(4) << std::setfill('0') << ((size_t)this&0xffff) << '>';
             ss << " PURE/";
             switch (statusValue) {
             case NIL: ss << "NIL; "; break;
@@ -224,9 +228,9 @@ public:
             }
             break;
         case REFERENCE:
-            ss << '<' << std::hex << ((size_t)this&0xffff) << '>';
+            ss << '<' << std::hex << std::setw(4) << std::setfill('0') << ((size_t)this&0xffff) << '>';
             ss << " REFERENCE OF ";
-            ss << '<' << std::hex << ((size_t)this->parent&0xffff) << '>';
+            ss << '<' << std::hex << std::setw(4) << std::setfill('0') << ((size_t)this->parent&0xffff) << '>';
             ss << " at depth " << depth();
             break;
         default:
@@ -332,8 +336,12 @@ public:
         os << "\nMAPPED STATUSSES\n";
 
         for (std::pair<PointerKey, PointerStatus*> p : this->map) {
+            std::string pretty(p.first.prettyString());
+            auto n = pretty.find("getelementptr inbounds");
+            if (n != std::string::npos) { pretty.replace(n, 22, "GEP"); } // shorten the name a bit
+
             os << " - ";
-            os << std::left << std::setw(60) << p.first.prettyString();
+            os << std::left << std::setw(60) << pretty;
             os << " => ";
             if (p.second == NULL) {
                 os << "NULL\n";
