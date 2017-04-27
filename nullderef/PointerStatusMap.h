@@ -104,7 +104,6 @@ enum PointerStatusValue {
 
 enum PointerStatusType {
     PURE,
-    ALIAS,
     REFERENCE
 };
 
@@ -128,10 +127,6 @@ enum PointerStatusType {
  *      this status either has a NIL, NON_NIL or NIL+NON_NIL status.
  *      Values that result from a null dereference are tagged with the
  *      UNDEFINED status.
- *  (2) ALIAS:
- *      The key that is associated with this status is an alias of some other
- *      key in the map. To look up the actual status value, we have to look at
- *      the aliased status.
  *  (3) REFERENCE:
  *      We know that the key that is associated with this status is a pointer to
  *      another key that is also tracked (i.e. it is a NON_NIL pointer to some
@@ -140,7 +135,7 @@ enum PointerStatusType {
 class PointerStatus {
     PointerStatusType type;
     PointerStatusValue statusValue; // only for PURE
-    PointerStatus *parent; // only for REFERENCE and ALIAS
+    PointerStatus *parent; // only for REFERENCE
 
     PointerStatus(PointerStatusType type, PointerStatusValue statusValue, PointerStatus *parent)
         : type(type), statusValue(statusValue), parent(parent) {}
@@ -153,17 +148,12 @@ public:
         return PointerStatus(PURE, status, NULL);
     }
 
-    static PointerStatus createAlias(PointerStatus *ps) {
-        return PointerStatus(ALIAS, DONT_KNOW /* irrelevant */, ps);
-    }
-
     static PointerStatus createReference(PointerStatus *ps) {
         return PointerStatus(REFERENCE, NON_NIL, ps);
     }
 
     PointerStatusValue getStatus() const {
         switch (type) {
-        case ALIAS: return parent->getStatus();
         case PURE: // fall through
         case REFERENCE: return statusValue;
         }
@@ -173,11 +163,8 @@ public:
 
     void setStatus(PointerStatusValue status) {
         // if this is a PURE status, then update the statusValue
-        // if this is an ALIAS, then update the original
         // if this is a REFERENCE status, then change this reference's type to PURE and set the value
         switch (type) {
-        case ALIAS:
-            this->parent->setStatus(status); break;
         case REFERENCE:
             this->type = PURE;
             this->statusValue = status;
@@ -191,7 +178,6 @@ public:
 
     int depth() const {
         switch (type) {
-        case ALIAS: return parent->depth();
         case REFERENCE: return 1 + (parent==NULL ? 0 : parent->depth());
         case PURE: return 0;
         }
@@ -209,7 +195,6 @@ public:
     /// Get the PointerStatus this pointer status refers to, or NULL if there is no such parent
     PointerStatus *getParent() const {
         switch (type) {
-        case ALIAS: return parent->getParent();
         case REFERENCE: return parent;
         case PURE: return NULL;
         }
@@ -218,7 +203,6 @@ public:
 
     void setParent(PointerStatus *parent) {
         switch (type) {
-        case ALIAS: this->parent->setParent(parent); break;
         case REFERENCE: this->parent = parent; break;
         case PURE: throw "setParent called on PURE status";
         default: throw "unreachable";
@@ -238,12 +222,6 @@ public:
             case UNDEFINED: ss << "UNDEFINED"; break;
             default: ss << "???"; break;
             }
-            break;
-        case ALIAS:
-            ss << '<' << std::hex << ((size_t)this&0xffff) << '>';
-            ss << " ALIAS OF ";
-            ss << '<' << std::hex << ((size_t)this->parent&0xffff) << '>';
-            ss << " at depth " << depth();
             break;
         case REFERENCE:
             ss << '<' << std::hex << ((size_t)this&0xffff) << '>';
@@ -273,19 +251,16 @@ struct PointerStatusMapFrameItem {
 };
 
 class PointerStatusMap {
-    std::vector<PointerStatus*> unmapped; // for memory management
+    std::vector<PointerStatus*> allocations; // for memory management
     std::unordered_map<PointerKey, PointerStatus*> map;
     std::stack<PointerStatusMapFrameItem> stack;
 
 public:
     PointerStatusMap() { pushFrame(); }
     ~PointerStatusMap() {
-        for (std::pair<PointerKey, PointerStatus*> p : this->map) {
-            delete p.second;
-        }
-        while (unmapped.size() > 0) {
-            delete unmapped.back();
-            unmapped.pop_back();
+        while (allocations.size() > 0) {
+            delete allocations.back();
+            allocations.pop_back();
         }
     }
 
@@ -304,20 +279,23 @@ public:
         } else {
             ptr = new PointerStatus(status);
             this->map[key] = ptr;
+            this->allocations.push_back(ptr);
         }
         return ptr;
     }
     PointerStatus *put(Value *value, const PointerStatus &status) { return this->put(PointerKey::createLlvmKey(value), status); }
 
-    void putAlias(Value *value, PointerStatus *alias) {
-        map[PointerKey::createLlvmKey(value)] = alias;
+    void putAlias(Value *value, PointerKey &keyToAlias) {
+        PointerStatus *status = get(keyToAlias);
+        if (status == NULL) throw "putAlias(..) called with invalid keyToAlias";
+        map[PointerKey::createLlvmKey(value)] = status;
     }
 
     /// Store pointer statusses that don't have a proper key.
     /// For an example, see store instruction in visitor.
     PointerStatus *putUnmapped(const PointerStatus &status) {
         PointerStatus *heapStatus = new PointerStatus(status);
-        this->unmapped.push_back(heapStatus);
+        this->allocations.push_back(heapStatus);
         return heapStatus;
     }
 
@@ -338,10 +316,17 @@ public:
         std::ostream os(&buf);
 
         os << "UNMAPPED STATUSSES\n";
-        for (PointerStatus *p : unmapped) {
-            os << " - ";
-            os << p->prettyString();
-            os << "\n";
+        bool skip = false;
+        for (PointerStatus *st : allocations) {
+            for (auto p : map) { if (p.second==st) { skip=true; break; } }
+
+            if (!skip) {
+                os << " - ";
+                os << st->prettyString();
+                os << "\n";
+            }
+
+            skip = false;
         }
 
         os << "\nMAPPED STATUSSES\n";

@@ -131,7 +131,7 @@ public:
         // no NULL_DEREF here:
         // http://llvm.org/docs/GetElementPtr.html#what-is-dereferenced-by-gep
 
-        Value *op1 = I.getPointerOperand();
+        Value *op = I.getPointerOperand();
         int64_t offset = -1;
         for (Use *u = I.op_begin()+1; u < I.op_end(); ++u) { // hack
             ConstantInt *c = dyn_cast<ConstantInt>(u->get());
@@ -139,26 +139,16 @@ public:
             if (c != NULL) offset += c->getSExtValue();
         }
 
-        PointerStatus status = map.contains(op1) ? *map.get(op1) : PointerStatus::createPure(DONT_KNOW);
-        PointerStatus *alias = map.put(PointerKey::createOffsetKey(op1, offset), status);
-        map.put(&I, PointerStatus::createAlias(alias));
-
-        //ConstantInt *op2 = dyn_cast<ConstantInt>(I.getOperand(1));
-
-        //if (!this->map.contains(op1)) { return MISSED_DEFINITION; }
-
-        //PointerStatus *op1status = this->map.get(op1);
-        //size_t offset = (size_t) op2->getZExtValue();
-        //PointerKey elemPtrKey = PointerKey::createOffsetKey(op1, offset);
-        //PointerStatus *elemPtrStatus;
-
-        //if (!this->map.contains(elemPtrKey)) {
-        //    elemPtrStatus = this->map.put(elemPtrKey, PointerStatus::createPure(op1status->getStatus()));
-        //} else {
-        //    elemPtrStatus = this->map.get(elemPtrKey);
-        //}
-
-        //this->map.put(&I, PointerStatus::createAlias(elemPtrStatus));
+        PointerKey key = PointerKey::createOffsetKey(op, offset);
+        if (map.contains(key)) {
+            map.putAlias(&I, key);
+        } else {
+            PointerStatus status = map.contains(op)
+                    ? *map.get(op)
+                    : PointerStatus::createPure(DONT_KNOW);
+            map.put(key, status);
+            map.putAlias(&I, key);
+        }
 
         return OK;
     }
