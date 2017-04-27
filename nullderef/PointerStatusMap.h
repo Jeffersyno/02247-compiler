@@ -1,6 +1,7 @@
 #ifndef POINTER_STATUS_MAP_H
 #define POINTER_STATUS_MAP_H
 
+#include <vector>
 #include <unordered_map>
 #include <stack>
 #include <sstream>
@@ -31,7 +32,7 @@ enum PointerKeyType {
 class PointerKey {
     PointerKeyType type;
     Value *value;
-    size_t offset;
+    int64_t offset;
 
     PointerKey(PointerKeyType type, Value *value, int offset)
         : type(type), value(value), offset(offset) {}
@@ -75,7 +76,7 @@ public:
         case OFFSET:
             s.append("OFFSET(");
             s.append(std::to_string(offset));
-            s.append(") ");
+            s.append("): ");
             this->value->print(rso);
             s.append(rso.str());
             s.append(";");
@@ -194,7 +195,6 @@ public:
         case REFERENCE: return 1 + (parent==NULL ? 0 : parent->depth());
         case PURE: return 0;
         }
-
         throw "unreachable";
     }
 
@@ -207,13 +207,12 @@ public:
     bool hasParent() { return this->getParent() != NULL; }
 
     /// Get the PointerStatus this pointer status refers to, or NULL if there is no such parent
-    PointerStatus *getParent() {
+    PointerStatus *getParent() const {
         switch (type) {
         case ALIAS: return parent->getParent();
         case REFERENCE: return parent;
         case PURE: return NULL;
         }
-
         throw "unreachable";
     }
 
@@ -221,7 +220,8 @@ public:
         switch (type) {
         case ALIAS: this->parent->setParent(parent); break;
         case REFERENCE: this->parent = parent; break;
-        case PURE: throw "setParent() not allowed on PointerStatusType of PURE";
+        case PURE: throw "setParent called on PURE status";
+        default: throw "unreachable";
         }
     }
 
@@ -273,6 +273,7 @@ struct PointerStatusMapFrameItem {
 };
 
 class PointerStatusMap {
+    std::vector<PointerStatus*> unmapped; // for memory management
     std::unordered_map<PointerKey, PointerStatus*> map;
     std::stack<PointerStatusMapFrameItem> stack;
 
@@ -281,6 +282,10 @@ public:
     ~PointerStatusMap() {
         for (std::pair<PointerKey, PointerStatus*> p : this->map) {
             delete p.second;
+        }
+        while (unmapped.size() > 0) {
+            delete unmapped.back();
+            unmapped.pop_back();
         }
     }
 
@@ -293,13 +298,28 @@ public:
     bool contains(Value *value) { return this->contains(PointerKey::createLlvmKey(value)); }
 
     PointerStatus *put(PointerKey key, const PointerStatus &status) {
-        PointerStatus *heapStatus = new PointerStatus(status);
-        PointerStatus *oldValue = this->map[key];
-        this->map[key] = heapStatus;
-        delete oldValue;
-        return heapStatus;
+        PointerStatus *ptr = this->map[key];
+        if (ptr != NULL) {
+            *ptr = status;
+        } else {
+            ptr = new PointerStatus(status);
+            this->map[key] = ptr;
+        }
+        return ptr;
     }
     PointerStatus *put(Value *value, const PointerStatus &status) { return this->put(PointerKey::createLlvmKey(value), status); }
+
+    void putAlias(Value *value, PointerStatus *alias) {
+        map[PointerKey::createLlvmKey(value)] = alias;
+    }
+
+    /// Store pointer statusses that don't have a proper key.
+    /// For an example, see store instruction in visitor.
+    PointerStatus *putUnmapped(const PointerStatus &status) {
+        PointerStatus *heapStatus = new PointerStatus(status);
+        this->unmapped.push_back(heapStatus);
+        return heapStatus;
+    }
 
     // START CONDITIONAL FRAMES API
     void pushFrame() { stack.push(PointerStatusMapFrameItem::delimiter()); }
@@ -316,6 +336,15 @@ public:
     void dump() {
         std::stringbuf buf;
         std::ostream os(&buf);
+
+        os << "UNMAPPED STATUSSES\n";
+        for (PointerStatus *p : unmapped) {
+            os << " - ";
+            os << p->prettyString();
+            os << "\n";
+        }
+
+        os << "\nMAPPED STATUSSES\n";
 
         for (std::pair<PointerKey, PointerStatus*> p : this->map) {
             os << " - ";

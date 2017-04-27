@@ -23,11 +23,6 @@ public:
 
     ErrorCode visitAllocaInst(llvm::AllocaInst &I) {
         // http://llvm.org/docs/LangRef.html#alloca-instruction
-
-        //if (I.getAllocatedType()->isPointerTy()) {
-
-        // create a new reference to something we don't know yet
-        this->map.put(PointerKey::createLlvmKey(&I), PointerStatus::createReference(NULL));
         return OK;
     }
 
@@ -36,24 +31,71 @@ public:
         Value *op1 = I.getOperand(0); // value to be stored
         Value *op2 = I.getOperand(1); // place to store the value
 
-        // Safety check: in order to store a value we should have detected an allocation first
-        if (!this->map.contains(op2)) { return MISSED_DEFINITION; }
+        // There are 3 different cases we'd like to detect:
+        //  - CASE A: op1 is a constant value, either NULL or NON-NULL.
+        //    We want to associate this information with op2.
+        //  - CASE B: op1 is a non-const value, either it is some non-pointer
+        //    variable in the program, or a pointer typed value we already track.
+        //  - CASE C: we have status information for the destination (op2). The
+        //    destination address might be NULL, in which case we'd want to report
+        //    a null dereference.
+        //
+        // As you can see in our beautiful ASCI diagram below, these 3 cases
+        // interleave.
+        //
+        //   +-+ [const value, unknown dest]
+        //   A
+        // +-|-+ [non-const value, unknown dest]
+        // | |
+        // B +-+ [const value, known dest]     +-+
+        // |                                     C
+        // +---+ [non-const value, known dest] +-+
+        //
+        // For that reason we split up the handling of this instruction as CASE 1-5.
 
-        PointerStatus* op2status = this->map.get(op2);
+        // CASE 1: We first detect whether the destination is known to us (CASE C).
+        // If we know that it is NIL, then we report an error, regardless of what
+        // op1 is (i.e. regardless of CASE A or B).
+        if (map.contains(op2) && map.get(op2)->derefIsError()) {
+            return handleDerefError(map.get(op2));
+        }
 
-        // The address to store op1 is zero: null pointer dereference happening
-        if (op2status->derefIsError()) { return handleDerefError(op2status); }
+        // CASE 2: the value we store is not a pointer type, skip. We only care about
+        // the destination address in this case, and we already caught that in CASE 1.
+        if (!op1->getType()->isPointerTy()) { return OK; }
 
-        if (dyn_cast<ConstantPointerNull>(op1)) {
-            // Constant NULL is stored (must be in a pointer type): we now know that op2 points to a NULL value
-            auto parent = this->map.put(&I, PointerStatus::createPure(NIL));
-            op2status->setParent(parent);
-        } else if (this->map.contains(op1)) {
-            // Value is loaded from some other register, and we know it
-            op2status->setParent(this->map.get(op1));
-        } else {
-            // Update the value of the already registered operand
-            this->map.put(op2, PointerStatus::createPure(DONT_KNOW));
+        // CASE 3: A constant value is stored in some register (CASE A)(and it is a
+        // pointer type (CASE 2), and the destination address is non-null (CASE 1)).
+        //    - CASE 3.1: the constant is NULL. Store that op2 points
+        //      to a value that stores NIL.
+        //    - CASE 3.2: the constant is NOT NULL. Store that op2 points
+        //      to a value that stores NON_NIL.
+        Constant *c;
+        if ((c = dyn_cast<Constant>(op1)) != NULL) {
+            if (c->isNullValue()) {
+                // We map op2 to a reference status that points to another unmapped PURE status.
+                // We use unmapped here because we don't really have a key that should map to it.
+                PointerStatus *parent = map.putUnmapped(PointerStatus::createPure(NIL));
+                map.put(op2, PointerStatus::createReference(parent));
+            }
+            else {
+                // Similar trick as above.
+                PointerStatus *parent = map.putUnmapped(PointerStatus::createPure(NON_NIL));
+                map.put(op2, PointerStatus::createReference(parent));
+            }
+        }
+        // CASE 4: A non-constant value is stored in some register, that is,
+        // we store a reference to some other object in op2.
+        //    - CASE 4.1: We have information about the value stored (e.g. another pointer value).
+        //    - CASE 4.2: We don't have information (e.g. reference to some non-pointer value).
+        else {
+            if (map.contains(op1)) {
+                PointerStatus *parent = map.get(op1);
+                map.put(op2, PointerStatus::createReference(parent));
+            } else {
+                PointerStatus *parent = map.putUnmapped(PointerStatus::createPure(NON_NIL));
+                map.put(op2, PointerStatus::createReference(parent));
+            }
         }
 
         return OK;
@@ -63,9 +105,11 @@ public:
         // http://llvm.org/docs/LangRef.html#load-instruction
         Value *op = I.getOperand(0);
 
-        // If the value we're loading is in our map, then consider
-        // the same pointer status for the new value.
-        if (this->map.contains(op)) {
+        // CASE 1: we have information about the operand being dereferenced. First,
+        // we check whether the dereferencing of the operand is an error. If not, we
+        // map the result/output of this instruction to the parent of the status
+        // information of operand.
+        if (map.contains(op)) {
             PointerStatus* status = this->map.get(op);
 
             if (status->derefIsError()) {
@@ -73,12 +117,11 @@ public:
             } else if (status->hasParent()) {
                 this->map.put(&I, *status->getParent());
             } else {
-                this->map.put(&I, PointerStatus::createPure(DONT_KNOW));
+                // pure value returned here, don't care
             }
-            return OK;
-        } else {
-            return MISSED_DEFINITION;
         }
+
+        return OK;
     }
 
     ErrorCode visitGetElementPtrInst(llvm::GetElementPtrInst &I) {
@@ -89,33 +132,44 @@ public:
         // http://llvm.org/docs/GetElementPtr.html#what-is-dereferenced-by-gep
 
         Value *op1 = I.getPointerOperand();
-        ConstantInt *op2 = dyn_cast<ConstantInt>(I.getOperand(2));
-
-        if (!this->map.contains(op1)) { return MISSED_DEFINITION; }
-
-        PointerStatus *op1status = this->map.get(op1);
-        size_t offset = (size_t) op2->getZExtValue();
-        PointerKey elemPtrKey = PointerKey::createOffsetKey(op1, offset);
-        PointerStatus *elemPtrStatus;
-
-        if (!this->map.contains(elemPtrKey)) {
-            elemPtrStatus = this->map.put(elemPtrKey, PointerStatus::createPure(op1status->getStatus()));
-        } else {
-            elemPtrStatus = this->map.get(elemPtrKey);
+        int64_t offset = -1;
+        for (Use *u = I.op_begin()+1; u < I.op_end(); ++u) { // hack
+            ConstantInt *c = dyn_cast<ConstantInt>(u->get());
+            if (c != NULL && offset == -1) offset = 0;
+            if (c != NULL) offset += c->getSExtValue();
         }
 
-        this->map.put(&I, PointerStatus::createAlias(elemPtrStatus));
+        PointerStatus status = map.contains(op1) ? *map.get(op1) : PointerStatus::createPure(DONT_KNOW);
+        PointerStatus *alias = map.put(PointerKey::createOffsetKey(op1, offset), status);
+        map.put(&I, PointerStatus::createAlias(alias));
+
+        //ConstantInt *op2 = dyn_cast<ConstantInt>(I.getOperand(1));
+
+        //if (!this->map.contains(op1)) { return MISSED_DEFINITION; }
+
+        //PointerStatus *op1status = this->map.get(op1);
+        //size_t offset = (size_t) op2->getZExtValue();
+        //PointerKey elemPtrKey = PointerKey::createOffsetKey(op1, offset);
+        //PointerStatus *elemPtrStatus;
+
+        //if (!this->map.contains(elemPtrKey)) {
+        //    elemPtrStatus = this->map.put(elemPtrKey, PointerStatus::createPure(op1status->getStatus()));
+        //} else {
+        //    elemPtrStatus = this->map.get(elemPtrKey);
+        //}
+
+        //this->map.put(&I, PointerStatus::createAlias(elemPtrStatus));
 
         return OK;
     }
 
     ErrorCode visitBitCastInst(BitCastInst &I) {
-        Value *op = I.getOperand(0);
+        //Value *op = I.getOperand(0);
 
-        // This is a cast, take the same value as the value that is being cast.
-        if (this->map.contains(op)) {
-            this->map.put(&I, PointerStatus::createAlias(this->map.get(op)));
-        }
+        //// This is a cast, take the same value as the value that is being cast.
+        //if (this->map.contains(op)) {
+        //    this->map.put(&I, PointerStatus::createAlias(this->map.get(op)));
+        //}
 
         return OK;
     }
@@ -132,7 +186,7 @@ public:
 
     ErrorCode visitIntToPtrInst(IntToPtrInst &I) {
         // http://llvm.org/docs/LangRef.html#inttoptr-to-instruction
-        this->map.put(&I, PointerStatus::createPure(DONT_KNOW));
+        //this->map.put(&I, PointerStatus::createPure(DONT_KNOW));
         return OK;
     }
 
@@ -145,8 +199,13 @@ private:
     ErrorCode handleDerefError(PointerStatus *status) {
         PointerStatusValue st = status->getStatus();
         switch (st) {
+
+        // NULL is being dereferenced
         case NIL: return NULL_DEREF;
+
+        // An UNDEFINED value (the result of a NULL dereference) is being dereferenced.
         case UNDEFINED: return UNDEFINED_DEREF;
+
         default: return OK;
         }
     }

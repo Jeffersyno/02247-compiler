@@ -132,6 +132,15 @@ function assert_undefderef_at_instruction() {
   assert_nullderef_at_instruction 4 "store i32 5, i32* %2, align 4"
 }
 
+@test "basic/example9b" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction 7 "store i32 %3, i32* %4, align 4"
+}
+
 @test "basic/example10" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
