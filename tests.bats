@@ -1,4 +1,3 @@
-#!/bin/bash
 # Test file for using with bats: https://github.com/sstephenson/bats
 
 # INSTALLATION
@@ -222,8 +221,9 @@ function assert_undefderef_at_instruction() {
   assert_failure
 
   run ./opt $BATS_TEST_DESCRIPTION
-  assert_events_count 1
-  assert_nullderef_at_instruction 11 "%9 = load i32, i32* %8, align 4"
+  assert_events_count 2
+  assert_nullderef_at_instruction 12 "%10 = load i32, i32* %9, align 4"
+  assert_nullderef_at_instruction 16 "%13 = load i32, i32* %12, align 4"
 }
 
 @test "struct/example5" {
@@ -251,10 +251,9 @@ function assert_undefderef_at_instruction() {
 
 @test "flow/example3" {
   run ./run $BATS_TEST_DESCRIPTION
-  assert_failure
+  assert_success
 
   run ./opt $BATS_TEST_DESCRIPTION
-  assert_events_count 1
-  assert_nullderef_at_instruction 5 "%9 = load i32, i32* %8, align 4" // Not sure about line number
+  assert_events_count 0
 }
 

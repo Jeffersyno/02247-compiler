@@ -6,8 +6,7 @@ A complex if conditional flow that always results in a pointer dereference
 
 int main() {
     int* ptr = 0;
-    int number = 50;
-    if (number > 25) {
+    if (ptr != 0) {
         int value = *ptr;
     }
 }

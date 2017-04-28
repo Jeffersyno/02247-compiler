@@ -102,15 +102,26 @@ public:
         }
     }
 
-    void dumpHexId(stringstream &ss) const {
-        int64_t id = (((int64_t) this) * 17) & 0xFFFF;
+    string dumpHexId() const {
+        // Try to generate a psuedo-random number from the pointer
+        // http://stackoverflow.com/a/4825477/2900494
+        stringstream ss;
+        uint64_t id = 5381;
+        id = (((id << 5) + id) + (((uint64_t) this) >>  0)) & 0xFFFF;
+        id = (((id << 5) + id) + (((uint64_t) this) >>  8)) & 0xFFFF;
+        id = (((id << 5) + id) + (((uint64_t) this) >> 16)) & 0xFFFF;
+        id = (((id << 5) + id) + (((uint64_t) this) >> 32)) & 0xFFFF;
+        id = (((id << 5) + id) + (((uint64_t) this) >> 40)) & 0xFFFF;
+        id = (((id << 5) + id) + (((uint64_t) this) >> 48)) & 0xFFFF;
+        id = (((id << 5) + id) + (((uint64_t) this) >> 56)) & 0xFFFF;
         ss << '<' << std::hex << std::setw(4) << std::setfill('0') << id << '>';
+        return ss.str();
     }
 
     string dump() const {
         stringstream ss;
 
-        dumpHexId(ss);
+        ss << dumpHexId();
 
         switch (type) {
         case LEAF_NODE:
@@ -127,7 +138,7 @@ public:
 
         case REFERENCE_NODE:
             ss << " REF OF ";
-            ref.referenced->dumpHexId(ss);
+            ss << ref.referenced->dumpHexId();
             ss << " at depth " << depth();
             break;
 
@@ -181,8 +192,9 @@ public:
 
     ~Graph() {
         // free graph nodes
-        for (Node *n : allocations) {
-            delete n;
+        while (!allocations.empty()) {
+            delete allocations.back();
+            allocations.pop_back();
         }
     }
 
@@ -215,7 +227,8 @@ public:
         return valueMap[value];
     }
 
-    /// Get the offset node or creates and returns a new LEAF/DONT_KNOW one.
+    /// Get the offset node or creates and returns a new LEAF node with
+    /// the same status as the given value's status.
     Node *getOffset(Value *value, int64_t offset) {
         if (!contains(value)) throw "Creating offset of something I don't know";
 
@@ -223,7 +236,7 @@ public:
         if (containsOffset(base, offset))
             return offsetNodes[OffsetNodeKey(base, offset)];
 
-        Node *leaf = insert(Node::newLeafNode(DONT_KNOW));
+        Node *leaf = insert(Node::newLeafNode(base->status())); // take status of base
         offsetNodes[OffsetNodeKey(base, offset)] = leaf;
         return leaf;
     }
@@ -257,15 +270,22 @@ public:
         std::stringbuf buf;
         std::ostream os(&buf);
 
-        os << "\nNODES IN MAP:\n";
+        os << "\nNODES IN GRAPH:\n";
         for (Node *n : allocations) {
             os << " - " << n->dump() << "\n";
         }
 
-        os << "\nENTRY POINTS INTO MAP:\n";
+        os << "\nENTRY POINTS INTO GRAPH:\n";
         for (auto p : valueMap) {
             os << " - " << std::left << std::setw(60) << dump(p.first);
             os << " => " << p.second->dump();
+            os << "\n";
+        }
+
+        os << "\nDERIVED OFFSET NODES\n";
+        for (auto p : offsetNodes) {
+            os << " - (" << p.first.original->dumpHexId() << ", " << p.first.offset << ")";
+            os << " => " << p.second->dumpHexId();
             os << "\n";
         }
 
@@ -277,10 +297,5 @@ public:
 
 
 } // namespace graph
-
-
-
-
-
 
 #endif // POINTER_GRAPH_H

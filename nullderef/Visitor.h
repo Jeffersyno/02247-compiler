@@ -79,7 +79,7 @@ public:
                 Node *referenced = graph.get(op1);
                 graph.insert(op2, Node::newRefNode(referenced));
             } else {
-                Node *referenced = graph.insert(Node::newLeafNode(graph::DONT_KNOW)); // TODO too conservative?
+                Node *referenced = graph.insert(op1, Node::newLeafNode(graph::DONT_KNOW)); // TODO too conservative?
                 graph.insert(op2, Node::newRefNode(referenced));
             }
         }
@@ -132,6 +132,20 @@ public:
 
         Node *offsetNode = graph.getOffset(op, offset);
         graph.insert(&I, offsetNode);
+
+        return OK;
+    }
+
+    // http://llvm.org/docs/LangRef.html#llvm-memcpy-intrinsic
+    ErrorCode visitMemCpyInst(MemCpyInst &I) {
+        Value *source = I.getSource();
+        Value *dest = I.getDest();
+
+        // Just check whether the source and destination are known to be NULL.
+        if ((graph.contains(source) && graph.get(source)->derefIsError())
+                || (graph.contains(dest) && graph.get(dest)->derefIsError())) {
+            return NULL_DEREF;
+        }
 
         return OK;
     }
