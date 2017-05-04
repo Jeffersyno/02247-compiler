@@ -284,8 +284,8 @@ public:
 
         os << "\nDERIVED OFFSET NODES\n";
         for (auto p : offsetNodes) {
-            os << " - (" << p.first.original->dumpHexId() << ", " << p.first.offset << ")";
-            os << " => " << p.second->dumpHexId();
+            os << " - " << p.second->dumpHexId();
+            os << " = (" << p.first.original->dumpHexId() << ", " << p.first.offset << ")";
             os << "\n";
         }
 
