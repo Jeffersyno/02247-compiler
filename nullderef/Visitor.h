@@ -132,8 +132,15 @@ public:
             if (c != NULL) offset += c->getSExtValue();
         }
 
-        Node *offsetNode = graph.getOffset(op, offset);
-        graph.insert(&I, offsetNode);
+        // In the case where we don't have a proper index value (it is -1),
+        // we store that we don't know: any number of indices can be mapped
+        // to -1 (see example 'array_unknown_indices').
+        if (offset == -1) {
+            graph.insert(&I, Node::newLeafNode(graph::DONT_KNOW));
+        } else {
+            Node *offsetNode = graph.getOffset(op, offset);
+            graph.insert(&I, offsetNode);
+        }
 
         return OK;
     }
