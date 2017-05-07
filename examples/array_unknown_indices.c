@@ -2,6 +2,8 @@
 /**
  * This example should not fail but it does, because we don't have information
  * about the indices used, so we consider them "the same" (-1).
+ *
+ * Check out constant folding pass
  */
 int main() {
     int i = 5;
