@@ -40,29 +40,29 @@ struct NullDereferenceDetection : public FunctionPass {
         for (BasicBlock &BB : function) { // [1]
             for (Instruction &I : BB) { // [1], little lower
                 ErrorCode result;
+
                 try { result = visitor.visit(I); }
                 catch (const char *msg) { printError(msg, &I); throw msg; /*for stack trace*/ }
 
                 printResult(result, &I, ++instNumber);
                 if ((result & ERROR) == ERROR) break;
 
-                // Dump tracker for every change.
-                //errs().changeColor(raw_ostream::BLUE);
-                //errs().reverseColor();
-                //errs() << ">>> INSTRUCTION " << instNumber << " ";
-                //I.dump();
-                //errs().resetColor();
-                //errs() << "\n";
-                //tracker.dump();
-                //errs() << "---------------------------------------------------------------------------------------------------------\n\n";
+                try {
+                    errs() << "Instruction number: " << instNumber;
+                    errs().changeColor(llvm::raw_ostream::YELLOW);
+                    errs() << visitor.dump();
+                    errs().resetColor();
+                    errs() << "----------------------------------\n";
+                } catch (const char *msg) { printError(msg); }
             }
         }
 
-        try {
-            errs().changeColor(llvm::raw_ostream::YELLOW);
-            errs() << visitor.dump();
-            errs().resetColor();
-        } catch (const char *msg) { printError(msg); }
+
+        //        try {
+        //            errs().changeColor(llvm::raw_ostream::YELLOW);
+        //            errs() << visitor.dump();
+        //            errs().resetColor();
+        //        } catch (const char *msg) { printError(msg); }
 
         // return true if the function was modified, false otherwise [4]
         return false;
