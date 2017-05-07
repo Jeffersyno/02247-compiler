@@ -5,7 +5,6 @@
 
 #include "PointerGraph.h"
 #include "ErrorCode.h"
-#include "ConditionalAnalyzer.h"
 
 using graph::Graph;
 using graph::Node;
@@ -15,8 +14,6 @@ using namespace llvm;
 // http://llvm.org/docs/doxygen/html/classllvm_1_1InstVisitor.html
 class Visitor : public InstVisitor<Visitor, ErrorCode> {
 public:
-    ConditionalAnalyzer conditionalAnalyzer;
-
     // http://llvm.org/docs/LangRef.html#store-instruction
     ErrorCode visitStoreInst(StoreInst &I) {
         Value *op1 = I.getOperand(0); // value to be stored
@@ -161,11 +158,6 @@ public:
     }
 
     ErrorCode visitInstruction(Instruction &I) {
-        return OK;
-    }
-
-    ErrorCode visitBranchInst(BranchInst &I) {
-        conditionalAnalyzer.visitBranchInst(I);
         return OK;
     }
 

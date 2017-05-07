@@ -1,71 +1,91 @@
 #ifndef CONDITION_ANALYZER_H
 #define CONDITION_ANALYZER_H 1
 
+#include <vector>
 #include <queue>
-#include <map>
 
+#include <llvm/IR/Function.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/ValueMap.h>
 
 #include "ErrorCode.h"
 #include "PointerStatusMap.h"
+#include "Visitor.h"
 
+using std::queue;
+using std::vector;
 using namespace llvm;
 
+/// This class is the start of the support for flow control structures.
+/// The goal of this file to control the use of the Vistor/Graph data
+/// structure.
+///
+/// ```
+///     ...                 // process normally
+///     if (x == NULL) {    //
+///         ...             // process with the knowledge that x==NULL
+///     } else {
+///         ...             // process with the knowledge that x!=NULL
+///     }
+///     ...                 // merge (take union) of the information
+///                         // collected in the branches
+/// ```
+///
+/// The difficult part here is to detect whether we are dealing with
+/// an 'if' or an 'if..else' construct.
 class ConditionalAnalyzer {
-public:
+    ValueMap<BasicBlock*, bool> visited;
 
+    Visitor visitor;
+
+public:
     ConditionalAnalyzer() { }
 
-    // There are two different cases for an if-statement: 
-    // Case 1: One if statement: 2 block, but the first one will branch to the second one
-    // Case 2: If and else statement: 2 blocks that branch to the same block. 
-    // Everything else whether it's if elseif else or nested statements can be made as a
-    // combination of the two cases.
-    // A while loop is 2 blocks, where one is checking the condition, while the other one
-    // contains the statements of the while loop. 
-    ErrorCode analyze(BasicBlock *bb) {
-        for (Instruction &I : *bb) {
-            // Find the BranchInst to know where to branch to.
-            if (BranchInst *bi = dyn_cast<BranchInst>(&I)) {
-                
-            }
-            // Find CmpInst to see if there's another conditional statement inside. 
-            if (CmpInst *bi = dyn_cast<CmpInst>(&I)) {
-                
-            }
+    void analyze(Function &F) {
+        for (BasicBlock &BB : F) {
+            analyze(&BB);
         }
-        blockQueue.push(bb);
-        // When all branches have been visited
-        if (completed==true) {
-            // Pop the queue into vector. Then delete it.
-            // Clear map, since the whole conditional statement is done. 
-            return OK;
-        }
-        return OK;
     }
 
-    // Whenever branching is happening there's either going to be 1 or 2 successors depending
-    // if it's a conditional statement or just jumping. 
-    void visitBranchInst(BranchInst &I) {
-        for(unsigned i = 0; i < I.getNumSuccessors(); i++) {
-            BasicBlock *bb = I.getSuccessor(i);
-            // Checking whether this Basic Block has been visited. 
-            if(visited[bb] != true) {
-                // Since a BasicBlock doesn't have a label it has to be added to identify blocks
-                bb->setName(std::to_string(visited.size()));
-                // Adding it to the map
-                visited[bb] = true;
-                analyze(bb);
+private:
+    void analyze(BasicBlock *BB, BasicBlock *elseBB = NULL) {
+        if (isVisited(BB)) { return; }
+        markVisited(BB);
+
+        BB->dump();
+
+        BasicBlock *trueBB = NULL;
+        BasicBlock *falseBB = NULL;
+        findBranchingBasicBlocks(BB, &trueBB, &falseBB);
+
+        if (elseBB != NULL && elseBB == trueBB) { errs() << "HELLO"; }
+
+        if (trueBB != NULL && falseBB != NULL) {
+            analyze(trueBB, falseBB);
+            if (elseBB != NULL && elseBB == trueBB) { errs() << "MERGE HERE"; }
+            analyze(falseBB);
+            if (elseBB == NULL) { errs() << "IF..ELSE: MERGE HERE"; }
+        }
+    }
+
+    void findBranchingBasicBlocks(BasicBlock *BB, BasicBlock **trueBB, BasicBlock **falseBB) {
+        for (Instruction &I : *BB) {
+            BranchInst *inst;
+            if ((inst = dyn_cast<BranchInst>(&I)) != NULL) {
+                if (inst->isConditional()) {
+                    *trueBB = inst->getSuccessor(0);
+                    *falseBB = inst->getSuccessor(1);
+                } else {
+                    *trueBB = inst->getSuccessor(0);
+                }
             }
         }
     }
 
-private: 
-    std::queue<BasicBlock*> blockQueue; 
-    std::map<BasicBlock*,bool> visited;   
-    bool completed = false;
+    bool isVisited(BasicBlock *BB)   { return visited.count(BB) == 1; }
+    void markVisited(BasicBlock *BB) { visited[BB] = true; }
 };
 
 #endif // CONDITION_ANALYZER_H

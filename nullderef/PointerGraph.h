@@ -182,9 +182,6 @@ template<> struct hash<graph::OffsetNodeKey> {
 
 namespace graph {
 
-struct GraphModification {
-};
-
 /// The Graph pointer tracker data structure.
 ///
 /// The graph itself consists of nodes, which are either of type
@@ -202,12 +199,10 @@ class Graph {
     vector<Node*> allocations;
     unordered_map<OffsetNodeKey, Node*> offsetNodes;
     ValueMap<Value*, Node*> entryMap;
-    vector<GraphModification*> history;
 
-    /* !!!
+    /*
      * The following three private functions are the only functions
-     * that can modify the above data structures.
-     * !!!
+     * that should modify the above data structures.
      */
 
     /// Update a node in the graph. If `oldNode` is NULL, then `newNode`
@@ -224,11 +219,12 @@ class Graph {
         }
     }
 
-    /// Add an entry
-    void setEntryValue(Value* value, Node *node) {
+    /// Add an entry point to the entry point map.
+    void setEntryPoint(Value* value, Node *node) {
         entryMap[value] = node;
     }
 
+    /// Add an offset node to the offset node map.
     void setOffsetNode(OffsetNodeKey key, Node* node) {
         offsetNodes[key] = node;
     }
@@ -240,10 +236,6 @@ public:
         // free graph nodes
         while (!allocations.empty()) {
             delete allocations.back();
-            allocations.pop_back();
-        }
-        while (!history.empty()) {
-            delete history.back();
             allocations.pop_back();
         }
     }
@@ -259,14 +251,14 @@ public:
             return updateNode(getNode(value), node);
         } else {
             Node *result = updateNode(NULL, node);
-            setEntryValue(value, result);
+            setEntryPoint(value, result);
             return result;
         }
     }
 
     /// Insert a new entry point; reuse given node.
     void insertNode(Value *value, Node *node) {
-        setEntryValue(value, node);
+        setEntryPoint(value, node);
     }
 
     Node *getNode(Value *value) {
@@ -298,20 +290,6 @@ public:
 
     bool containsOffsetNode(Node *base, int64_t offset) {
         return offsetNodes.count(OffsetNodeKey(base, offset)) != 0;
-    }
-
-    // HISTORY API //
-
-    void pushFrame() {
-        throw "error";
-    }
-
-    vector<GraphModification*> popFrame() {
-        throw "error";
-    }
-
-    void mergeFrame(vector<GraphModification*> frame) {
-        throw "error";
     }
 
     string dump(Value *value) {
