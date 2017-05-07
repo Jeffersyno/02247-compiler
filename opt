@@ -27,7 +27,7 @@ if [[ ! -e $BCFILE || $CFILE -nt $BCFILE ]]; then
     ./emitbc $FILE
 fi
 
-CMD="$OPT -load build/nullderef/libNullDereferenceDetection.so -nullderef < $BCFILE > /dev/null"
+CMD="$OPT -load build/nullderef/libNullDereferenceDetection.so -nullderef -d -t < $BCFILE > /dev/null"
 
 echo $CMD
 eval $CMD

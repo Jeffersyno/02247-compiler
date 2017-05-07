@@ -12,22 +12,21 @@
 source settings
 
 FOLDER=examples
-FILE=hello
+BFOLDER=build/examples
 
 if [[ $# -eq 1 ]]; then
     FILE="$1"
 fi
 
 CFILE="$FOLDER/$FILE.c"
-#OFILE="$FOLDER/$FILE"
-OFILE=/dev/null
+OFILE="$BFOLDER/$FILE.o"
 
 # Recompile the LLVM pass C++ code, don't run clang if
 # compilation failed.
 make -C build || exit
 
 # Make the folder
-mkdir -p $(dirname "$BCFILE")
+mkdir -p $(dirname "$BFOLDER")
 
 # Compile the example `examples/hello.c' file with 
 # clang with the null pointer detection pass enabled.

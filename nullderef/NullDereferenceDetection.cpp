@@ -8,12 +8,16 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
+#include "llvm/Support/CommandLine.h"
+
 #include "ErrorCode.h"
 #include "PointerTrackerVisitor.h"
 
 #include "Visitor.h"
 
 using namespace llvm;
+static cl::opt<bool> testOutputEnabled("t", cl::desc("Enable output information for testing purposes"));
+static cl::opt<bool> debugOutputEnabled("d", cl::desc("Enable output information for debugging purposes"));
 
 /*
  * An LLVM pass that statically detects null dereferences.
@@ -41,28 +45,33 @@ struct NullDereferenceDetection : public FunctionPass {
             for (Instruction &I : BB) { // [1], little lower
                 ErrorCode result;
                 try { result = visitor.visit(I); }
-                catch (const char *msg) { printError(msg, &I); throw msg; /*for stack trace*/ }
+                catch (const char *msg) {
+                    printError(msg, &I);
+                    throw msg; // For stack trace
+                }
 
-                printResult(result, &I, ++instNumber);
+                // Print user oriented output
+                printUserOutput(result, &I);
+
+                // Print testing output
+                if (testOutputEnabled) {
+                    printTestOutput(result, &I, ++instNumber);
+                }
+
+                // If there was an unknown error, stop the loop
                 if ((result & ERROR) == ERROR) break;
-
-                // Dump tracker for every change.
-                //errs().changeColor(raw_ostream::BLUE);
-                //errs().reverseColor();
-                //errs() << ">>> INSTRUCTION " << instNumber << " ";
-                //I.dump();
-                //errs().resetColor();
-                //errs() << "\n";
-                //tracker.dump();
-                //errs() << "---------------------------------------------------------------------------------------------------------\n\n";
             }
         }
 
-        try {
-            errs().changeColor(llvm::raw_ostream::YELLOW);
-            errs() << visitor.dump();
-            errs().resetColor();
-        } catch (const char *msg) { printError(msg); }
+        if (debugOutputEnabled) {
+            try {
+                errs().changeColor(llvm::raw_ostream::YELLOW);
+                errs() << visitor.dump();
+                errs().resetColor();
+            } catch (const char *msg) { printError(msg); }
+        }
+
+        errs() << "\n";
 
         // return true if the function was modified, false otherwise [4]
         return false;

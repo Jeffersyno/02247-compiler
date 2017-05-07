@@ -1,6 +1,6 @@
-[submodule "test/bats-support"]
-	path = test/bats-support
+[submodule "testDependencies/bats-support"]
+	path = testDependencies/bats-support
 	url = https://github.com/ztombol/bats-support
-[submodule "test/bats-assert"]
-	path = test/bats-assert
+[submodule "testDependencies/bats-assert"]
+	path = testDependencies/bats-assert
 	url = https://github.com/ztombol/bats-assert

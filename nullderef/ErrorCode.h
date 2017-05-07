@@ -38,15 +38,18 @@ std::string errorCodeName(ErrorCode code) {
     }
 }
 
-void printResult(ErrorCode code, Instruction* inst, size_t instNumber) {
-    if (code != OK) {
-        if (code == NULL_DEREF) {
-            if (DILocation *Loc = inst->getDebugLoc()) {
-                errs() << "Null dereference happening at line " << Loc->getLine();
-                errs() << '\n';
-            }
+void printUserOutput(ErrorCode code, Instruction* inst) {
+    if (code == NULL_DEREF) {
+        if (DILocation *Loc = inst->getDebugLoc()) {
+            errs() << "Null dereference happening at line " << Loc->getLine();
+            errs() << '\n';
         }
-        errs() << "RESULT[" << instNumber << "]:" << errorCodeName(code);
+    }
+}
+
+void printTestOutput(ErrorCode code, Instruction* inst, size_t instNumber) {
+    if (code != OK) {
+        errs() << "TEST[" << instNumber << "]:" << errorCodeName(code);
         inst->print(errs());
         errs() << "\n";
     }

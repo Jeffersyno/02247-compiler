@@ -10,10 +10,10 @@
 # RUN
 # From the command line: `bats tests.bats`
 
-load 'test/bats-support/load'
-load 'test/bats-assert/load'
+load 'testDependencies/bats-support/load'
+load 'testDependencies/bats-assert/load'
 
-RESULT="RESULT"
+RESULT="TEST"
 
 OK="OK"
 DEREF="DEREF"
@@ -180,6 +180,15 @@ function assert_undefderef_at_instruction() {
   assert_events_count 0
 }
 
+@test "basic/example14" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction  10 "%8 = load i32, i32* %7, align 4"
+}
+
 @test "struct/example0" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
@@ -256,4 +265,5 @@ function assert_undefderef_at_instruction() {
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 0
 }
+
 
