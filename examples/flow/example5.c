@@ -1,15 +1,12 @@
 /*
-A complex if-else conditional flow that always results in a pointer dereference in the else closure
+A while flow that always results in a pointer dereference
 */
 
 #include <stdbool.h>
 
 int main() {
     int* ptr = 0;
-    int number = 0;
-    if (number > 25) {
-        int value = *ptr;
-    } else {
+    while (true) {
         int value = *ptr;
     }
 }

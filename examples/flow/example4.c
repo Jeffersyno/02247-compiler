@@ -1,14 +1,15 @@
 /*
-A complex if conditional flow (with the condition in the global scope) that always results in a pointer dereference
+A complex if-else conditional flow that always results in a pointer dereference in the else closure
 */
 
 #include <stdbool.h>
 
-int number = 50;
-
 int main() {
     int* ptr = 0;
+    int number = 0;
     if (number > 25) {
+        int value = *ptr;
+    } else {
         int value = *ptr;
     }
 }

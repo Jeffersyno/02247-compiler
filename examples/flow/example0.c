@@ -1,12 +1,12 @@
 /*
-A while flow that always results in a pointer dereference
+An if conditional flow that never results in a pointer dereference
 */
 
 #include <stdbool.h>
 
 int main() {
     int* ptr = 0;
-    while (true) {
+    if (false) {
         int value = *ptr;
     }
 }
