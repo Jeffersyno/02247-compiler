@@ -1,5 +1,5 @@
 /*
-Get the struct linked with a null dereferenced pointer
+Set the element of a struct when it's pointer is null
 */
 
 struct A {
@@ -7,6 +7,6 @@ struct A {
 };
 
 int main() {
-    struct A *ptr1 = 0;
-    struct A ptr2 = *ptr1;
+    struct A *ptr = 0;
+    ptr->value = 77;
 }

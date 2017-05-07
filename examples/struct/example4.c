@@ -1,13 +1,13 @@
 /*
-Access to the value pointed by a null dereferenced pointer that is declared inside of a struct
+Access to the value pointed by a null dereference integer pointer declared inside a struct
 */
 
-struct A { int v; int* ptr; };
+struct A { 
+	int* value; 
+};
 
 int main() {
     struct A a;
-    struct A *p = &a;
-    p->ptr = 0;
-    int i = *(p->ptr);
-    int j = *(a.ptr);
+    a.value = 0;
+    int b = *(a.value);
 }

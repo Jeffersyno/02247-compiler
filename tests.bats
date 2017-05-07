@@ -189,7 +189,7 @@ function assert_undefderef_at_instruction() {
   assert_nullderef_at_instruction  10 "%8 = load i32, i32* %7, align 4"
 }
 
-@test "struct/example0" {
+@test "struct/example1" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
 
@@ -198,7 +198,7 @@ function assert_undefderef_at_instruction() {
   assert_nullderef_at_instruction 6 "%5 = load i32, i32* %4, align 4"
 }
 
-@test "struct/example1" {
+@test "struct/example2" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
 
@@ -207,7 +207,7 @@ function assert_undefderef_at_instruction() {
   assert_nullderef_at_instruction 5 "store i32 77, i32* %3, align 4"
 }
 
-@test "struct/example2" {
+@test "struct/example3" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
 
@@ -216,7 +216,7 @@ function assert_undefderef_at_instruction() {
   assert_nullderef_at_instruction 7 "call void @llvm.memcpy.p0i8.p0i8.i64(i8* %4, i8* %5, i64 4, i32 4, i1 false)"
 }
 
-@test "struct/example3" {
+@test "struct/example4" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
 
@@ -225,7 +225,7 @@ function assert_undefderef_at_instruction() {
   assert_nullderef_at_instruction 7 "%6 = load i32, i32* %5, align 4"
 }
 
-@test "struct/example4" {
+@test "struct/example5" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
 
@@ -235,7 +235,7 @@ function assert_undefderef_at_instruction() {
   assert_nullderef_at_instruction 16 "%13 = load i32, i32* %12, align 4"
 }
 
-@test "struct/example5" {
+@test "struct/example6" {
   run ./run $BATS_TEST_DESCRIPTION
   assert_failure
 
