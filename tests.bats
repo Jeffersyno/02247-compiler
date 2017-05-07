@@ -260,13 +260,42 @@ function assert_undefderef_at_instruction() {
 
 @test "flow/example3" {
   run ./run $BATS_TEST_DESCRIPTION
-  assert_success
+  assert_failure
 
   run ./opt $BATS_TEST_DESCRIPTION
-  assert_events_count 0
+  assert_events_count 1
+  assert_nullderef_at_instruction 10 "%7 = load i32, i32* %6, align 4"
 }
 
-@test "array_unknown_indices" {
+@test "flow/example4" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction 10 "%7 = load i32, i32* %6, align 4"
+}
+
+@test "flow/example5" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 2
+  assert_nullderef_at_instruction 13 "%9 = load i32, i32* %8, align 4"
+  assert_nullderef_at_instruction 17 "%11 = load i32, i32* %10, align 4"
+}
+
+@test "flow/example6" {
+  run ./run $BATS_TEST_DESCRIPTION
+  assert_failure
+
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 1
+  assert_nullderef_at_instruction 8 "%5 = load i32, i32* %4, align 4"
+}
+
+@test "others/array_unknown_indices" {
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 0
 }
