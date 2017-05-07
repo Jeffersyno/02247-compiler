@@ -39,13 +39,13 @@ std::string errorCodeName(ErrorCode code) {
 }
 
 void printResult(ErrorCode code, Instruction* inst, size_t instNumber) {
-    // testing debug info
-    if (DILocation *Loc = inst->getDebugLoc()) {
-        errs() << Loc->getLine();
-        errs() << '\n';
-    }
-
     if (code != OK) {
+        if (code == NULL_DEREF) {
+            if (DILocation *Loc = inst->getDebugLoc()) {
+                errs() << "Null dereference happening at line " << Loc->getLine();
+                errs() << '\n';
+            }
+        }
         errs() << "RESULT[" << instNumber << "]:" << errorCodeName(code);
         inst->print(errs());
         errs() << "\n";
