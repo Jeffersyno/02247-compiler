@@ -266,4 +266,7 @@ function assert_undefderef_at_instruction() {
   assert_events_count 0
 }
 
-
+@test "array_unknown_indices" {
+  run ./opt $BATS_TEST_DESCRIPTION
+  assert_events_count 0
+}

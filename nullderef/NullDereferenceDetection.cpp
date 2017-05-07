@@ -44,6 +44,7 @@ struct NullDereferenceDetection : public FunctionPass {
         for (BasicBlock &BB : function) { // [1]
             for (Instruction &I : BB) { // [1], little lower
                 ErrorCode result;
+
                 try { result = visitor.visit(I); }
                 catch (const char *msg) {
                     printError(msg, &I);

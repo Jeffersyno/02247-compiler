@@ -49,7 +49,7 @@ public:
     // Whenever branching is happening there's either going to be 1 or 2 successors depending
     // if it's a conditional statement or just jumping. 
     void visitBranchInst(BranchInst &I) {
-        for(int i = 0; i < I.getNumSuccessors(); i++) {
+        for(unsigned i = 0; i < I.getNumSuccessors(); i++) {
             BasicBlock *bb = I.getSuccessor(i);
             // Checking whether this Basic Block has been visited. 
             if(visited[bb] != true) {

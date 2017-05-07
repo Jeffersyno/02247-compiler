@@ -182,10 +182,56 @@ template<> struct hash<graph::OffsetNodeKey> {
 
 namespace graph {
 
+struct GraphModification {
+};
+
+/// The Graph pointer tracker data structure.
+///
+/// The graph itself consists of nodes, which are either of type
+/// LEAF, or of type REFERENCE. There are two ways to insert nodes
+/// into the graph: (1) just insert a new node, or (2) derive an
+/// offset node from a node already in the graph.
+///
+/// We use "entry points" into our graph to retrieve nodes and work
+/// with the information stored in the nodes.
+/// The "entry points" are LLVM values. They are mapped to nodes in
+/// the graph. Given an LLVM value, we are able to look-up information
+/// like "is this value NULL?", or "what does this node reference?",
+/// etc.
 class Graph {
     vector<Node*> allocations;
     unordered_map<OffsetNodeKey, Node*> offsetNodes;
-    ValueMap<Value*, Node*> valueMap;
+    ValueMap<Value*, Node*> entryMap;
+    vector<GraphModification*> history;
+
+    /* !!!
+     * The following three private functions are the only functions
+     * that can modify the above data structures.
+     * !!!
+     */
+
+    /// Update a node in the graph. If `oldNode` is NULL, then `newNode`
+    /// will be added to the graph as a new node. A pointer to the graph-node
+    /// is returned.
+    Node *updateNode(Node *oldNode, Node newNode) {
+        if (oldNode == NULL) {
+            Node *heapNode = new Node(newNode);
+            allocations.push_back(heapNode);
+            return heapNode;
+        } else {
+            *oldNode = newNode;
+            return oldNode;
+        }
+    }
+
+    /// Add an entry
+    void setEntryValue(Value* value, Node *node) {
+        entryMap[value] = node;
+    }
+
+    void setOffsetNode(OffsetNodeKey key, Node* node) {
+        offsetNodes[key] = node;
+    }
 
 public:
     Graph() {}
@@ -196,62 +242,76 @@ public:
             delete allocations.back();
             allocations.pop_back();
         }
+        while (!history.empty()) {
+            delete history.back();
+            allocations.pop_back();
+        }
     }
 
     /// Insert a new node in the graph without creating an entry with an LLVM value.
-    Node *insert(Node node) {
-        Node *heap = new Node(node);
-        allocations.push_back(heap);
-        return heap;
+    Node *insertNode(Node node) {
+        return updateNode(NULL, node);
     }
 
     /// Insert a new node in the graph and make the given value an entry point into the graph.
-    Node *insert(Value *value, Node node) {
-        Node *heap;
-        if (contains(value)) {
-            heap = get(value);
-            *heap = node;
+    Node *insertNode(Value *value, Node node) {
+        if (isEntryPoint(value)) {
+            return updateNode(getNode(value), node);
         } else {
-            heap = insert(node);
-            valueMap[value] = heap;
+            Node *result = updateNode(NULL, node);
+            setEntryValue(value, result);
+            return result;
         }
-        return heap;
     }
 
     /// Insert a new entry point; reuse given node.
-    void insert(Value *value, Node *node) {
-        valueMap[value] = node;
+    void insertNode(Value *value, Node *node) {
+        setEntryValue(value, node);
     }
 
-    Node *get(Value *value) {
-        return valueMap[value];
+    Node *getNode(Value *value) {
+        return entryMap[value];
     }
 
     /// Get the offset node or creates and returns a new LEAF node with
     /// the same status as the given value's status.
     Node *getOffset(Value *value, int64_t offset) {
-        if (!contains(value)) throw "Creating offset of something I don't know";
+        if (!isEntryPoint(value)) throw "Creating offset of something I don't know";
 
-        Node *base = get(value);
-        if (containsOffset(base, offset))
+        Node *base = getNode(value);
+        if (containsOffsetNode(base, offset))
             return offsetNodes[OffsetNodeKey(base, offset)];
 
-        Node *leaf = insert(Node::newLeafNode(base->status())); // take status of base
-        offsetNodes[OffsetNodeKey(base, offset)] = leaf;
+        Node *leaf = insertNode(Node::newLeafNode(base->status())); // take status of base
+        setOffsetNode(OffsetNodeKey(base, offset), leaf);
         return leaf;
     }
 
-    bool contains(Value *value) {
-        return valueMap.count(value) != 0;
+    bool isEntryPoint(Value *value) {
+        return entryMap.count(value) != 0;
     }
 
-    bool containsOffset(Value *value, int64_t offset) {
-        if (!contains(value)) return false;
-        return containsOffset(get(value), offset);
+    bool containsOffsetNode(Value *value, int64_t offset) {
+        if (!isEntryPoint(value)) return false;
+        return containsOffsetNode(getNode(value), offset);
     }
 
-    bool containsOffset(Node *base, int64_t offset) {
+    bool containsOffsetNode(Node *base, int64_t offset) {
         return offsetNodes.count(OffsetNodeKey(base, offset)) != 0;
+    }
+
+    // HISTORY API //
+
+    void pushFrame() {
+        throw "error";
+    }
+
+    vector<GraphModification*> popFrame() {
+        throw "error";
+    }
+
+    void mergeFrame(vector<GraphModification*> frame) {
+        throw "error";
     }
 
     string dump(Value *value) {
@@ -276,7 +336,7 @@ public:
         }
 
         os << "\nENTRY POINTS INTO GRAPH:\n";
-        for (auto p : valueMap) {
+        for (auto p : entryMap) {
             os << " - " << std::left << std::setw(60) << dump(p.first);
             os << " => " << p.second->dump();
             os << "\n";
