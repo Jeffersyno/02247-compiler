@@ -47,22 +47,22 @@ struct NullDereferenceDetection : public FunctionPass {
                 printResult(result, &I, ++instNumber);
                 if ((result & ERROR) == ERROR) break;
 
-                try {
-                    errs() << "Instruction number: " << instNumber;
-                    errs().changeColor(llvm::raw_ostream::YELLOW);
-                    errs() << visitor.dump();
-                    errs().resetColor();
-                    errs() << "----------------------------------\n";
-                } catch (const char *msg) { printError(msg); }
+                //try {
+                //    errs() << "Instruction number: " << instNumber;
+                //    errs().changeColor(llvm::raw_ostream::YELLOW);
+                //    errs() << visitor.dump();
+                //    errs().resetColor();
+                //    errs() << "----------------------------------\n";
+                //} catch (const char *msg) { printError(msg); }
             }
         }
 
 
-        //        try {
-        //            errs().changeColor(llvm::raw_ostream::YELLOW);
-        //            errs() << visitor.dump();
-        //            errs().resetColor();
-        //        } catch (const char *msg) { printError(msg); }
+        try {
+            errs().changeColor(llvm::raw_ostream::YELLOW);
+            errs() << visitor.dump();
+            errs().resetColor();
+        } catch (const char *msg) { printError(msg); }
 
         // return true if the function was modified, false otherwise [4]
         return false;

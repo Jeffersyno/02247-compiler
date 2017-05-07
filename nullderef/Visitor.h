@@ -47,8 +47,8 @@ public:
         // CASE 1: We first detect whether the destination is known to us (CASE C).
         // If we know that it is NIL, then we report an error, regardless of what
         // op1 is (i.e. regardless of CASE A or B).
-        if (graph.contains(op2) && graph.get(op2)->derefIsError()) {
-            return handleDerefError(graph.get(op2));
+        if (graph.isEntryPoint(op2) && graph.getNode(op2)->derefIsError()) {
+            return handleDerefError(graph.getNode(op2));
         }
 
         // CASE 2: the value we store is not a pointer type, skip. We only care about
@@ -64,12 +64,12 @@ public:
         Constant *c;
         if ((c = dyn_cast<Constant>(op1)) != NULL) {
             if (c->isNullValue()) {
-                Node *leaf = graph.insert(Node::newLeafNode(graph::NIL));
-                graph.insert(op2, Node::newRefNode(leaf));
+                Node *leaf = graph.insertNode(Node::newLeafNode(graph::NIL));
+                graph.insertNode(op2, Node::newRefNode(leaf));
             }
             else {
-                Node *leaf = graph.insert(Node::newLeafNode(graph::NON_NIL));
-                graph.insert(op2, Node::newRefNode(leaf));
+                Node *leaf = graph.insertNode(Node::newLeafNode(graph::NON_NIL));
+                graph.insertNode(op2, Node::newRefNode(leaf));
             }
         }
         // CASE 4: A non-constant value is stored in some register, that is,
@@ -77,12 +77,12 @@ public:
         //    - CASE 4.1: We have information about the value stored (e.g. another pointer value).
         //    - CASE 4.2: We don't have information (e.g. reference to some non-pointer value).
         else {
-            if (graph.contains(op1)) {
-                Node *referenced = graph.get(op1);
-                graph.insert(op2, Node::newRefNode(referenced));
+            if (graph.isEntryPoint(op1)) {
+                Node *referenced = graph.getNode(op1);
+                graph.insertNode(op2, Node::newRefNode(referenced));
             } else {
-                Node *referenced = graph.insert(op1, Node::newLeafNode(graph::DONT_KNOW)); // TODO too conservative?
-                graph.insert(op2, Node::newRefNode(referenced));
+                Node *referenced = graph.insertNode(op1, Node::newLeafNode(graph::DONT_KNOW)); // TODO too conservative?
+                graph.insertNode(op2, Node::newRefNode(referenced));
             }
         }
 
@@ -97,17 +97,17 @@ public:
         // check whether the derefercing is an error. If it is, then we return an error.
         // In the other case, we make this instruction point to the referenced node of the
         // node to which the operand points.
-        if (graph.contains(op)) {
-            Node *n = graph.get(op);
+        if (graph.isEntryPoint(op)) {
+            Node *n = graph.getNode(op);
             if (n->derefIsError()) {
                 return handleDerefError(I, n);
             } else if (n->isRef()) {
                 Node *deref = n->refPtr()->getReferenced();
-                graph.insert(&I, deref);
+                graph.insertNode(&I, deref);
             } else {
-                Node *newLeaf = graph.insert(Node::newLeafNode(graph::DONT_KNOW));
+                Node *newLeaf = graph.insertNode(Node::newLeafNode(graph::DONT_KNOW));
                 n->transformToRefNode(newLeaf);
-                graph.insert(&I, newLeaf);
+                graph.insertNode(&I, newLeaf);
             }
         }
 
@@ -121,8 +121,8 @@ public:
 
         Value *op = I.getPointerOperand();
 
-        if (!graph.contains(op)) {
-            graph.insert(op, Node::newLeafNode(graph::DONT_KNOW));
+        if (!graph.isEntryPoint(op)) {
+            graph.insertNode(op, Node::newLeafNode(graph::DONT_KNOW));
         }
 
         int64_t offset = -1;
@@ -136,10 +136,11 @@ public:
         // we store that we don't know: any number of indices can be mapped
         // to -1 (see example 'array_unknown_indices').
         if (offset == -1) {
-            graph.insert(&I, Node::newLeafNode(graph::DONT_KNOW));
+            graph.insertNode(&I, Node::newLeafNode(graph::DONT_KNOW));
         } else {
+            // copy status from op
             Node *offsetNode = graph.getOffset(op, offset);
-            graph.insert(&I, offsetNode);
+            graph.insertNode(&I, offsetNode);
         }
 
         return OK;
@@ -151,8 +152,8 @@ public:
         Value *dest = I.getDest();
 
         // Just check whether the source and destination are known to be NULL.
-        if ((graph.contains(source) && graph.get(source)->derefIsError())
-                || (graph.contains(dest) && graph.get(dest)->derefIsError())) {
+        if ((graph.isEntryPoint(source) && graph.getNode(source)->derefIsError())
+                || (graph.isEntryPoint(dest) && graph.getNode(dest)->derefIsError())) {
             return NULL_DEREF;
         }
 
@@ -185,7 +186,7 @@ private:
     }
 
     ErrorCode handleDerefError(Instruction &I, Node *n) {
-        graph.insert(&I, Node::newLeafNode(graph::UNDEFINED));
+        graph.insertNode(&I, Node::newLeafNode(graph::UNDEFINED));
         return handleDerefError(n);
     }
 
