@@ -39,7 +39,7 @@ public:
         //          |                                     C
         //          +---+ [non-const value, known dest] +-+
         //
-        // For that reason we split up the handling of this instruction as CASE 1-5.
+        // For that reason we split up the handling of this instruction as CASE 1-4.
 
         // CASE 1: We first detect whether the destination is known to us (CASE C).
         // If we know that it is NIL, then we report an error, regardless of what
