@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# This file defined the paths to CLANG and LLVM OPT. By default, it uses the
-# binaries on the path. To use custom values, call `./settings override' and
-# modify the `./settings_override'
+# This file defines the paths to CLANG and LLVM OPT. By default, it uses the
+# binaries on the system's PATH. To use custom values, call `./settings
+# override' and modify the `./settings_override' file.
 
 CLANG=clang
 OPT=opt

@@ -2,6 +2,7 @@
 #define POINTER_GRAPH_H 1
 
 #include <string>
+#include <sstream>
 #include <vector>
 #include <iomanip>
 #include <unordered_map>
@@ -187,7 +188,8 @@ namespace graph {
 /// The graph itself consists of nodes, which are either of type
 /// LEAF, or of type REFERENCE. There are two ways to insert nodes
 /// into the graph: (1) just insert a new node, or (2) derive an
-/// offset node from a node already in the graph.
+/// offset node from a node already in the graph. We use the offset
+/// nodes to represent fields of structs.
 ///
 /// We use "entry points" into our graph to retrieve nodes and work
 /// with the information stored in the nodes.
@@ -298,8 +300,10 @@ public:
         value->print(rso);
         string r = rso.str();
 
+        // replace the long "getelementptr inbounds" name with "GEP"
+        // so it doesn't mess up the graph dump
         auto n = r.find("getelementptr inbounds");
-        if (n != std::string::npos) { r.replace(n, 22, "GEP"); } // shorten the name a bit
+        if (n != std::string::npos) { r.replace(n, 22, "GEP"); }
 
         return r;
     }

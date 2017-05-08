@@ -170,8 +170,8 @@ private:
     ErrorCode handleDerefError(Node *n) {
         switch (n->status()) {
 
-        case NIL: return NULL_DEREF; // NULL is being dereferenced
-        case UNDEFINED: return UNDEFINED_DEREF; // The result of a NULL deref is being dereferenced
+        case graph::NIL: return NULL_DEREF; // NULL is being dereferenced
+        case graph::UNDEFINED: return UNDEFINED_DEREF; // The result of a NULL deref is being dereferenced
 
         default: return OK;
         }

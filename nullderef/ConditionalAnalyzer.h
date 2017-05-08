@@ -11,7 +11,6 @@
 #include <llvm/IR/ValueMap.h>
 
 #include "ErrorCode.h"
-#include "PointerStatusMap.h"
 #include "Visitor.h"
 
 using std::queue;

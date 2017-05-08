@@ -13,7 +13,12 @@ Build:
 
 Run:
 
+    # Run manually:
     $ clang -Xclang -load -Xclang build/skeleton/libNullDereferenceDetection.* examples/hello.c
+
+    # Or use one of the bash scripts:
+    $ ./opt <folder>/<example>            # compile with clang and run with opt
+    $ ./compile <folder>/<example>        # compile and run pass with clang
 
 [1]: https://www.cs.cornell.edu/~asampson/blog/llvm.html
 [2]: https://github.com/sampsyo/llvm-pass-skeleton
@@ -21,9 +26,10 @@ Run:
 
 # Possible null detections
 
-- Null detection for local variables. If a variable with a pointer type has 0
-  assigned to it, then track it and warn when dereferenced.
-- Null detection for arguments. Track values of variables in a larger scope. 
+- Null detection for local variables within a function. If a variable with a
+  pointer type has 0 assigned to it, then track it and warn when dereferenced.
+  (done)
 - Detect `null` check: stop complaining if a `null` check has been done.
+  (interesting, but not done)
 - Track `maybe` null return values. Analyse a function implementation to see if
-  there exists a possibility of null.
+  there exists a possibility of null. (done, but no warnings)

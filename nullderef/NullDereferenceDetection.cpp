@@ -11,8 +11,7 @@
 #include <llvm/Support/CommandLine.h>
 
 #include "ErrorCode.h"
-#include "PointerTrackerVisitor.h"
-#include "ConditionalAnalyzer.h"
+//#include "ConditionalAnalyzer.h"
 
 #include "Visitor.h"
 
