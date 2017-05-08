@@ -264,7 +264,7 @@ function assert_undefderef_at_instruction() {
 
   run ./opt $BATS_TEST_DESCRIPTION
   assert_events_count 1
-  assert_nullderef_at_instruction 10 "%7 = load i32, i32* %6, align 4"
+  assert_nullderef_at_instruction 10 "%8 = load i32, i32* %7, align 4"
 }
 
 @test "flow/example3" {
